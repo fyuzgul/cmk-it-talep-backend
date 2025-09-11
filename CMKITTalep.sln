@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMKITTalep.Entities", "CMKITTalep.Entities\CMKITTalep.Entities.csproj", "{2F7A7FF8-0B69-42FF-8AA0-09E838B9A56F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMKITTalep.DataAccess", "CMKITTalep.DataAccess\CMKITTalep.DataAccess.csproj", "{A1AF4820-024B-4E60-8BF1-749BF49175A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMKITTalep.Business", "CMKITTalep.Business\CMKITTalep.Business.csproj", "{1072FDB7-CCC0-4F24-9CFB-525CB1F84A47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMKITTalep.API", "CMKITTalep.API\CMKITTalep.API.csproj", "{582DD12B-8773-48B8-8E8E-12B004E9CAF9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2F7A7FF8-0B69-42FF-8AA0-09E838B9A56F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F7A7FF8-0B69-42FF-8AA0-09E838B9A56F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F7A7FF8-0B69-42FF-8AA0-09E838B9A56F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F7A7FF8-0B69-42FF-8AA0-09E838B9A56F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1AF4820-024B-4E60-8BF1-749BF49175A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1AF4820-024B-4E60-8BF1-749BF49175A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1AF4820-024B-4E60-8BF1-749BF49175A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1AF4820-024B-4E60-8BF1-749BF49175A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1072FDB7-CCC0-4F24-9CFB-525CB1F84A47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1072FDB7-CCC0-4F24-9CFB-525CB1F84A47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1072FDB7-CCC0-4F24-9CFB-525CB1F84A47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1072FDB7-CCC0-4F24-9CFB-525CB1F84A47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{582DD12B-8773-48B8-8E8E-12B004E9CAF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{582DD12B-8773-48B8-8E8E-12B004E9CAF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{582DD12B-8773-48B8-8E8E-12B004E9CAF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{582DD12B-8773-48B8-8E8E-12B004E9CAF9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
