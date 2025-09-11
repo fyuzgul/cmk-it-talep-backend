@@ -22,12 +22,16 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IUserTypeRepository, UserTypeRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRequestTypeRepository, RequestTypeRepository>();
+builder.Services.AddScoped<ISupportTypeRepository, SupportTypeRepository>();
 
 // Services
 builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IUserTypeService, UserTypeService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRequestTypeService, RequestTypeService>();
+builder.Services.AddScoped<ISupportTypeService, SupportTypeService>();
 
 var app = builder.Build();
 

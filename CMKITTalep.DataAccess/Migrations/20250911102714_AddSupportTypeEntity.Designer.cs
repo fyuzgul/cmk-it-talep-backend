@@ -4,6 +4,7 @@ using CMKITTalep.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CMKITTalep.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250911102714_AddSupportTypeEntity")]
+    partial class AddSupportTypeEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,12 +76,7 @@ namespace CMKITTalep.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("SupportTypeId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("SupportTypeId");
 
                     b.ToTable("RequestTypes");
                 });
@@ -106,7 +104,12 @@ namespace CMKITTalep.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RequestTypeId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("RequestTypeId");
 
                     b.ToTable("SupportTypes");
                 });
@@ -192,15 +195,15 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.ToTable("UserTypes");
                 });
 
-            modelBuilder.Entity("CMKITTalep.Entities.RequestType", b =>
+            modelBuilder.Entity("CMKITTalep.Entities.SupportType", b =>
                 {
-                    b.HasOne("CMKITTalep.Entities.SupportType", "SupportType")
-                        .WithMany("RequestTypes")
-                        .HasForeignKey("SupportTypeId")
+                    b.HasOne("CMKITTalep.Entities.RequestType", "RequestType")
+                        .WithMany()
+                        .HasForeignKey("RequestTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("SupportType");
+                    b.Navigation("RequestType");
                 });
 
             modelBuilder.Entity("CMKITTalep.Entities.User", b =>
@@ -220,11 +223,6 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.Navigation("Department");
 
                     b.Navigation("UserType");
-                });
-
-            modelBuilder.Entity("CMKITTalep.Entities.SupportType", b =>
-                {
-                    b.Navigation("RequestTypes");
                 });
 #pragma warning restore 612, 618
         }
