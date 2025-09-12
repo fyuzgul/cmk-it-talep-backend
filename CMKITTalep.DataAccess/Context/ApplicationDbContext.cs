@@ -143,7 +143,6 @@ namespace CMKITTalep.DataAccess.Context
                 entity.Property(e => e.ScreenshotFilePath).HasMaxLength(500);
                 entity.Property(e => e.RequestStatusId).IsRequired();
                 entity.Property(e => e.RequestTypeId).IsRequired();
-                entity.Property(e => e.RequestResponseTypeId).IsRequired(false);
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
 
                 // Foreign Key Relationships
@@ -168,12 +167,6 @@ namespace CMKITTalep.DataAccess.Context
                       .HasForeignKey(r => r.RequestTypeId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(r => r.RequestResponseType)
-                      .WithMany()
-                      .HasForeignKey(r => r.RequestResponseTypeId)
-                      .IsRequired(false)
-                      .OnDelete(DeleteBehavior.Restrict);
-
                 // Global query filter for soft delete
                 entity.HasQueryFilter(e => !e.IsDeleted);
             });
@@ -186,12 +179,19 @@ namespace CMKITTalep.DataAccess.Context
                 entity.Property(e => e.Message).IsRequired();
                 entity.Property(e => e.FilePath).HasMaxLength(500);
                 entity.Property(e => e.RequestId).IsRequired();
+                entity.Property(e => e.RequestResponseTypeId).IsRequired(false);
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
 
-                // Foreign Key Relationship to Request
+                // Foreign Key Relationships
                 entity.HasOne(r => r.Request)
                       .WithMany(req => req.RequestResponses)
                       .HasForeignKey(r => r.RequestId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.RequestResponseType)
+                      .WithMany()
+                      .HasForeignKey(r => r.RequestResponseTypeId)
+                      .IsRequired(false)
                       .OnDelete(DeleteBehavior.Restrict);
 
                 // Global query filter for soft delete

@@ -17,7 +17,6 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .Where(r => r.SupportProviderId == supportProviderId)
                                .ToListAsync();
         }
@@ -41,7 +40,6 @@ namespace CMKITTalep.DataAccess.Repositories
                 .Include(r => r.RequestCreator)
                 .Include(r => r.RequestStatus)
                 .Include(r => r.RequestType)
-                .Include(r => r.RequestResponseType)
                 .ToListAsync();
                                
             Console.WriteLine($"DEBUG Repository: Found {requests.Count()} requests for RequestCreatorId = {requestCreatorId}");
@@ -54,7 +52,6 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .Where(r => r.RequestStatusId == requestStatusId)
                                .ToListAsync();
         }
@@ -65,20 +62,17 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .Where(r => r.RequestTypeId == requestTypeId)
                                .ToListAsync();
         }
 
-        public async Task<IEnumerable<Request>> GetByRequestResponseTypeIdAsync(int? requestResponseTypeId)
+        // This method is no longer valid since RequestResponseTypeId moved to RequestResponse
+        // Consider removing this method or implementing it differently
+        public Task<IEnumerable<Request>> GetByRequestResponseTypeIdAsync(int? requestResponseTypeId)
         {
-            return await _dbSet.Include(r => r.SupportProvider)
-                               .Include(r => r.RequestCreator)
-                               .Include(r => r.RequestStatus)
-                               .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
-                               .Where(r => r.RequestResponseTypeId == requestResponseTypeId)
-                               .ToListAsync();
+            // Since RequestResponseTypeId is now in RequestResponse, this method needs to be reimplemented
+            // or removed entirely. For now, returning empty collection.
+            return Task.FromResult<IEnumerable<Request>>(new List<Request>());
         }
 
         public async Task<IEnumerable<Request>> GetByDescriptionContainingAsync(string description)
@@ -87,7 +81,6 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .Where(r => r.Description.Contains(description))
                                .ToListAsync();
         }
@@ -100,7 +93,6 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .ToListAsync();
         }
 
@@ -112,7 +104,6 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Include(r => r.RequestResponseType)
                                .FirstOrDefaultAsync();
         }
     }

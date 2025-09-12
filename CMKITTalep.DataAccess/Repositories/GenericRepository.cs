@@ -59,7 +59,42 @@ namespace CMKITTalep.DataAccess.Repositories
                 modifiedDateProperty.SetValue(entity, DateTime.Now);
             }
             
-            _dbSet.Update(entity);
+            // Get the entity's primary key value
+            var idProperty = typeof(T).GetProperty("Id");
+            if (idProperty != null)
+            {
+                var idValue = idProperty.GetValue(entity);
+                
+                // Check if entity is already being tracked
+                var trackedEntity = _context.ChangeTracker.Entries<T>()
+                    .FirstOrDefault(e => idProperty.GetValue(e.Entity).Equals(idValue));
+                
+                if (trackedEntity != null)
+                {
+                    // Entity is already being tracked, update its properties
+                    foreach (var property in typeof(T).GetProperties())
+                    {
+                        if (property.Name != "Id" && property.CanWrite)
+                        {
+                            var newValue = property.GetValue(entity);
+                            property.SetValue(trackedEntity.Entity, newValue);
+                        }
+                    }
+                    trackedEntity.State = EntityState.Modified;
+                }
+                else
+                {
+                    // Entity is not being tracked, attach it
+                    _dbSet.Attach(entity);
+                    _context.Entry(entity).State = EntityState.Modified;
+                }
+            }
+            else
+            {
+                // Fallback to original Update method
+                _dbSet.Update(entity);
+            }
+            
             await _context.SaveChangesAsync();
         }
 

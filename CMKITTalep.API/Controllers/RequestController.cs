@@ -43,9 +43,13 @@ namespace CMKITTalep.API.Controllers
             return Ok(requests);
         }
 
+        // This endpoint is no longer valid since RequestResponseTypeId moved to RequestResponse
+        // Consider removing this endpoint or implementing it differently
         [HttpGet("responsetype/{requestResponseTypeId}")]
         public async Task<ActionResult<IEnumerable<Request>>> GetByRequestResponseType(int? requestResponseTypeId)
         {
+            // Since RequestResponseTypeId is now in RequestResponse, this endpoint needs to be reimplemented
+            // or removed entirely. For now, returning empty collection.
             var requests = await _requestService.GetByRequestResponseTypeIdAsync(requestResponseTypeId);
             return Ok(requests);
         }
@@ -68,7 +72,6 @@ namespace CMKITTalep.API.Controllers
             // Set default values for new requests
             entity.SupportProviderId = null; // Support provider will be assigned later
             entity.RequestStatusId = 1; // Default status (e.g., "Open" or "Pending")
-            entity.RequestResponseTypeId = 3; // Will be set when response is created
 
             return await base.Create(entity);
         }
@@ -90,6 +93,13 @@ namespace CMKITTalep.API.Controllers
             {
                 return BadRequest(ModelState);
             }
+
+            // Clear navigation properties to avoid tracking conflicts
+            entity.SupportProvider = null;
+            entity.RequestCreator = null;
+            entity.RequestStatus = null;
+            entity.RequestType = null;
+            entity.RequestResponses = new List<RequestResponse>();
 
             await _requestService.UpdateAsync(entity);
             return NoContent();

@@ -14,6 +14,7 @@ namespace CMKITTalep.DataAccess.Repositories
         public async Task<IEnumerable<RequestResponse>> GetByRequestIdAsync(int requestId)
         {
             return await _dbSet.Include(r => r.Request)
+                               .Include(r => r.RequestResponseType)
                                .Where(r => r.RequestId == requestId)
                                .ToListAsync();
         }
@@ -21,6 +22,7 @@ namespace CMKITTalep.DataAccess.Repositories
         public async Task<IEnumerable<RequestResponse>> GetByMessageContainingAsync(string message)
         {
             return await _dbSet.Include(r => r.Request)
+                               .Include(r => r.RequestResponseType)
                                .Where(r => r.Message.Contains(message))
                                .ToListAsync();
         }
@@ -29,6 +31,7 @@ namespace CMKITTalep.DataAccess.Repositories
         public new async Task<IEnumerable<RequestResponse>> GetAllAsync()
         {
             return await _dbSet.Include(r => r.Request)
+                               .Include(r => r.RequestResponseType)
                                .ToListAsync();
         }
 
@@ -36,6 +39,7 @@ namespace CMKITTalep.DataAccess.Repositories
         public new async Task<RequestResponse?> GetByIdAsync(int id)
         {
             return await _dbSet.Include(r => r.Request)
+                               .Include(r => r.RequestResponseType)
                                .FirstOrDefaultAsync(r => r.Id == id);
         }
     }
