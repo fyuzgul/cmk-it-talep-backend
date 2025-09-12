@@ -1,6 +1,7 @@
-@CMKITTalep.API_HostAddress = http://localhost:5174
+@CMKITTalep.API_HostAddress = https://localhost:7097
 
-GET {{CMKITTalep.API_HostAddress}}/weatherforecast/
+# Test - Get Requests by Creator ID (6 ile test)
+GET {{CMKITTalep.API_HostAddress}}/api/Request/creator/6
 Accept: application/json
 
 ###

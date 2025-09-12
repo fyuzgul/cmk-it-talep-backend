@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
-using CMKITTalep.API.Models;
 
 namespace CMKITTalep.API.Controllers
 {
@@ -89,32 +88,5 @@ namespace CMKITTalep.API.Controllers
             return NoContent();
         }
 
-        [HttpPost("login")]
-        public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
-        {
-            var user = await _userService.GetByEmailAsync(request.Email);
-            if (user == null)
-            {
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-
-            if (!_userService.VerifyPassword(request.Password, user.Password))
-            {
-                return Unauthorized(new { message = "Invalid email or password" });
-            }
-
-            // Return user without password
-            return Ok(new
-            {
-                id = user.Id,
-                firstName = user.FirstName,
-                lastName = user.LastName,
-                email = user.Email,
-                departmentId = user.DepartmentId,
-                typeId = user.TypeId,
-                department = user.Department,
-                userType = user.UserType
-            });
-        }
     }
 }
