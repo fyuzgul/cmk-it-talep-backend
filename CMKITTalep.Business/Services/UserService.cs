@@ -34,6 +34,11 @@ namespace CMKITTalep.Business.Services
             return await _userRepository.GetByUserTypeIdAsync(userTypeId);
         }
 
+        public async Task<IEnumerable<User>> GetSupportUsersBySupportTypeIdAsync(int supportTypeId)
+        {
+            return await _userRepository.GetSupportUsersBySupportTypeIdAsync(supportTypeId);
+        }
+
         public override async Task<User> AddAsync(User entity)
         {
             // Hash the password before saving

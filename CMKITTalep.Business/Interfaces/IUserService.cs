@@ -8,6 +8,7 @@ namespace CMKITTalep.Business.Interfaces
         Task<bool> ExistsByEmailAsync(string email);
         Task<IEnumerable<User>> GetByDepartmentIdAsync(int departmentId);
         Task<IEnumerable<User>> GetByUserTypeIdAsync(int userTypeId);
+        Task<IEnumerable<User>> GetSupportUsersBySupportTypeIdAsync(int supportTypeId);
         bool VerifyPassword(string password, string hashedPassword);
     }
 }

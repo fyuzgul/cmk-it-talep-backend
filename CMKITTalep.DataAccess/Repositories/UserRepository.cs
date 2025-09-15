@@ -39,6 +39,16 @@ namespace CMKITTalep.DataAccess.Repositories
                                .ToListAsync();
         }
 
+        public async Task<IEnumerable<User>> GetSupportUsersBySupportTypeIdAsync(int supportTypeId)
+        {
+            // Only return users with UserType that contains "support" (not admin or it)
+            return await _dbSet.Include(u => u.Department)
+                               .Include(u => u.UserType)
+                               .Where(u => u.UserType != null && 
+                                          u.UserType.Name.ToLower().Contains("support"))
+                               .ToListAsync();
+        }
+
         public new async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _dbSet.Include(u => u.Department)

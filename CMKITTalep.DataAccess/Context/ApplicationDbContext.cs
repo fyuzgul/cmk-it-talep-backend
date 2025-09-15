@@ -15,9 +15,9 @@ namespace CMKITTalep.DataAccess.Context
         public DbSet<RequestType> RequestTypes { get; set; }
         public DbSet<SupportType> SupportTypes { get; set; }
         public DbSet<RequestStatus> RequestStatuses { get; set; }
-        public DbSet<RequestResponseType> RequestResponseTypes { get; set; }
         public DbSet<Request> Requests { get; set; }
         public DbSet<RequestResponse> RequestResponses { get; set; }
+        public DbSet<MessageReadStatus> MessageReadStatuses { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -120,17 +120,6 @@ namespace CMKITTalep.DataAccess.Context
                 entity.HasQueryFilter(e => !e.IsDeleted);
             });
 
-            // RequestResponseType entity configuration
-            modelBuilder.Entity<RequestResponseType>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).ValueGeneratedOnAdd();
-                entity.Property(e => e.Name).IsRequired();
-                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
-                
-                // Global query filter for soft delete
-                entity.HasQueryFilter(e => !e.IsDeleted);
-            });
 
             // Request entity configuration
             modelBuilder.Entity<Request>(entity =>
@@ -179,7 +168,7 @@ namespace CMKITTalep.DataAccess.Context
                 entity.Property(e => e.Message).IsRequired();
                 entity.Property(e => e.FilePath).HasMaxLength(500);
                 entity.Property(e => e.RequestId).IsRequired();
-                entity.Property(e => e.RequestResponseTypeId).IsRequired(false);
+                entity.Property(e => e.SenderId).IsRequired(false);
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
 
                 // Foreign Key Relationships
@@ -188,11 +177,38 @@ namespace CMKITTalep.DataAccess.Context
                       .HasForeignKey(r => r.RequestId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(r => r.RequestResponseType)
+                entity.HasOne(r => r.Sender)
                       .WithMany()
-                      .HasForeignKey(r => r.RequestResponseTypeId)
-                      .IsRequired(false)
+                      .HasForeignKey(r => r.SenderId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                // Global query filter for soft delete
+                entity.HasQueryFilter(e => !e.IsDeleted);
+            });
+
+            // MessageReadStatus entity configuration
+            modelBuilder.Entity<MessageReadStatus>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.MessageId).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.ReadAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
+
+                // Foreign Key Relationships
+                entity.HasOne(mrs => mrs.Message)
+                      .WithMany(rr => rr.ReadStatuses)
+                      .HasForeignKey(mrs => mrs.MessageId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(mrs => mrs.User)
+                      .WithMany(u => u.MessageReadStatuses)
+                      .HasForeignKey(mrs => mrs.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Unique constraint to prevent duplicate read statuses
+                entity.HasIndex(e => new { e.MessageId, e.UserId }).IsUnique();
 
                 // Global query filter for soft delete
                 entity.HasQueryFilter(e => !e.IsDeleted);

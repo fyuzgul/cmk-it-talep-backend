@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
+using CMKITTalep.API.Attributes;
 
 namespace CMKITTalep.API.Controllers
 {
@@ -39,6 +40,7 @@ namespace CMKITTalep.API.Controllers
         }
 
         [HttpPost]
+        [RequireAdmin]
         public override async Task<ActionResult<User>> Create(User entity)
         {
             // Check if user with same email already exists
@@ -52,6 +54,7 @@ namespace CMKITTalep.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [RequireAdmin]
         public override async Task<IActionResult> Update(int id, User entity)
         {
             if (id != entity.Id)
@@ -88,5 +91,11 @@ namespace CMKITTalep.API.Controllers
             return NoContent();
         }
 
+        [HttpDelete("{id}")]
+        [RequireAdmin]
+        public override async Task<IActionResult> Delete(int id)
+        {
+            return await base.Delete(id);
+        }
     }
 }

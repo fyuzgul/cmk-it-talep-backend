@@ -14,17 +14,21 @@ namespace CMKITTalep.API.Controllers
         private readonly IUserTypeService _userTypeService;
         private readonly IPasswordResetTokenService _passwordResetTokenService;
         private readonly IEmailService _emailService;
+        private readonly IJwtTokenService _jwtTokenService;
+        private readonly JwtSettings _jwtSettings;
 
-        public AuthController(IUserService userService, IUserTypeService userTypeService, IPasswordResetTokenService passwordResetTokenService, IEmailService emailService)
+        public AuthController(IUserService userService, IUserTypeService userTypeService, IPasswordResetTokenService passwordResetTokenService, IEmailService emailService, IJwtTokenService jwtTokenService, JwtSettings jwtSettings)
         {
             _userService = userService;
             _userTypeService = userTypeService;
             _passwordResetTokenService = passwordResetTokenService;
             _emailService = emailService;
+            _jwtTokenService = jwtTokenService;
+            _jwtSettings = jwtSettings;
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<object>> Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
         {
             var user = await _userService.GetByEmailAsync(request.Email);
             if (user == null)
@@ -37,17 +41,20 @@ namespace CMKITTalep.API.Controllers
                 return Unauthorized(new { message = "Invalid email or password" });
             }
 
-            // Return user without password
-            return Ok(new
+            // Generate JWT token
+            var token = _jwtTokenService.GenerateToken(user);
+            var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes);
+
+            // Return authentication response with token
+            return Ok(new AuthResponse
             {
-                id = user.Id,
-                firstName = user.FirstName,
-                lastName = user.LastName,
-                email = user.Email,
-                departmentId = user.DepartmentId,
-                typeId = user.TypeId,
-                department = user.Department,
-                userType = user.UserType
+                Token = token,
+                UserId = user.Id.ToString(),
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                UserType = user.UserType?.Name ?? "User",
+                ExpiresAt = expiresAt
             });
         }
 

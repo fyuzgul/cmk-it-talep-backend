@@ -14,15 +14,15 @@ namespace CMKITTalep.DataAccess.Repositories
         public async Task<IEnumerable<RequestResponse>> GetByRequestIdAsync(int requestId)
         {
             return await _dbSet.Include(r => r.Request)
-                               .Include(r => r.RequestResponseType)
+                               .Include(r => r.Sender)
                                .Where(r => r.RequestId == requestId)
+                               .OrderBy(r => r.CreatedDate)
                                .ToListAsync();
         }
 
         public async Task<IEnumerable<RequestResponse>> GetByMessageContainingAsync(string message)
         {
             return await _dbSet.Include(r => r.Request)
-                               .Include(r => r.RequestResponseType)
                                .Where(r => r.Message.Contains(message))
                                .ToListAsync();
         }
@@ -31,7 +31,6 @@ namespace CMKITTalep.DataAccess.Repositories
         public new async Task<IEnumerable<RequestResponse>> GetAllAsync()
         {
             return await _dbSet.Include(r => r.Request)
-                               .Include(r => r.RequestResponseType)
                                .ToListAsync();
         }
 
@@ -39,8 +38,9 @@ namespace CMKITTalep.DataAccess.Repositories
         public new async Task<RequestResponse?> GetByIdAsync(int id)
         {
             return await _dbSet.Include(r => r.Request)
-                               .Include(r => r.RequestResponseType)
+                               .Include(r => r.Sender)
                                .FirstOrDefaultAsync(r => r.Id == id);
         }
+
     }
 }

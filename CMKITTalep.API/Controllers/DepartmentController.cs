@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
+using CMKITTalep.API.Attributes;
 
 namespace CMKITTalep.API.Controllers
 {
@@ -25,6 +26,7 @@ namespace CMKITTalep.API.Controllers
         }
 
         [HttpPost]
+        [RequireAdmin]
         public override async Task<ActionResult<Department>> Create(Department entity)
         {
             // Check if department with same name already exists
@@ -35,6 +37,20 @@ namespace CMKITTalep.API.Controllers
             }
 
             return await base.Create(entity);
+        }
+
+        [HttpPut("{id}")]
+        [RequireAdmin]
+        public override async Task<IActionResult> Update(int id, Department entity)
+        {
+            return await base.Update(id, entity);
+        }
+
+        [HttpDelete("{id}")]
+        [RequireAdmin]
+        public override async Task<IActionResult> Delete(int id)
+        {
+            return await base.Delete(id);
         }
     }
 }

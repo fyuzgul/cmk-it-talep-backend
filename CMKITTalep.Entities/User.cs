@@ -16,5 +16,6 @@ namespace CMKITTalep.Entities
         // Navigation Properties
         public Department? Department { get; set; }
         public UserType? UserType { get; set; }
+        public ICollection<MessageReadStatus> MessageReadStatuses { get; set; } = new List<MessageReadStatus>();
     }
 }

@@ -4,6 +4,7 @@ using CMKITTalep.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CMKITTalep.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250912134722_RemoveRequestResponseType")]
+    partial class RemoveRequestResponseType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,46 +51,6 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Departments");
-                });
-
-            modelBuilder.Entity("CMKITTalep.Entities.MessageReadStatus", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MessageId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ReadAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("MessageId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("MessageReadStatuses");
                 });
 
             modelBuilder.Entity("CMKITTalep.Entities.PasswordResetToken", b =>
@@ -219,14 +182,9 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.Property<int>("RequestId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SenderId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("RequestId");
-
-                    b.HasIndex("SenderId");
 
                     b.ToTable("RequestResponses");
                 });
@@ -401,25 +359,6 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.ToTable("UserTypes");
                 });
 
-            modelBuilder.Entity("CMKITTalep.Entities.MessageReadStatus", b =>
-                {
-                    b.HasOne("CMKITTalep.Entities.RequestResponse", "Message")
-                        .WithMany("ReadStatuses")
-                        .HasForeignKey("MessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CMKITTalep.Entities.User", "User")
-                        .WithMany("MessageReadStatuses")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Message");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("CMKITTalep.Entities.Request", b =>
                 {
                     b.HasOne("CMKITTalep.Entities.User", "RequestCreator")
@@ -462,14 +401,7 @@ namespace CMKITTalep.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("CMKITTalep.Entities.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("Request");
-
-                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("CMKITTalep.Entities.RequestType", b =>
@@ -507,19 +439,9 @@ namespace CMKITTalep.DataAccess.Migrations
                     b.Navigation("RequestResponses");
                 });
 
-            modelBuilder.Entity("CMKITTalep.Entities.RequestResponse", b =>
-                {
-                    b.Navigation("ReadStatuses");
-                });
-
             modelBuilder.Entity("CMKITTalep.Entities.SupportType", b =>
                 {
                     b.Navigation("RequestTypes");
-                });
-
-            modelBuilder.Entity("CMKITTalep.Entities.User", b =>
-                {
-                    b.Navigation("MessageReadStatuses");
                 });
 #pragma warning restore 612, 618
         }

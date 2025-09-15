@@ -1,23 +1,72 @@
 using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
+using CMKITTalep.API.Services;
 
 namespace CMKITTalep.API.Controllers
 {
     public class RequestResponseController : BaseController<RequestResponse>
     {
         private readonly IRequestResponseService _requestResponseService;
+        private readonly IRequestService _requestService;
+        private readonly IEmailService _emailService;
+        private readonly IMessageReadStatusService _messageReadStatusService;
 
-        public RequestResponseController(IRequestResponseService requestResponseService) : base(requestResponseService)
+        public RequestResponseController(IRequestResponseService requestResponseService, IRequestService requestService, IEmailService emailService, IMessageReadStatusService messageReadStatusService) : base(requestResponseService)
         {
             _requestResponseService = requestResponseService;
+            _requestService = requestService;
+            _emailService = emailService;
+            _messageReadStatusService = messageReadStatusService;
         }
 
         [HttpGet("request/{requestId}")]
         public async Task<ActionResult<IEnumerable<RequestResponse>>> GetByRequestId(int requestId)
         {
+            // Kullanıcı ID'sini token'dan al
+            var userIdClaim = HttpContext.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
             var requestResponses = await _requestResponseService.GetByRequestIdAsync(requestId);
-            return Ok(requestResponses);
+            
+            // Her mesaj için okuma durumunu kontrol et ve ekle
+            var responseWithReadStatus = new List<object>();
+            foreach (var response in requestResponses)
+            {
+                var isRead = await _messageReadStatusService.IsMessageReadByUserAsync(response.Id, userId);
+                var readStatuses = await _messageReadStatusService.GetReadStatusesByMessageIdAsync(response.Id);
+                
+                responseWithReadStatus.Add(new
+                {
+                    response.Id,
+                    response.Message,
+                    response.FilePath,
+                    response.RequestId,
+                    response.SenderId,
+                    response.CreatedDate,
+                    response.ModifiedDate,
+                    response.IsDeleted,
+                    response.Request,
+                    response.Sender,
+                    IsReadByCurrentUser = isRead,
+                    ReadByUsers = readStatuses.Select(rs => new
+                    {
+                        rs.UserId,
+                        rs.ReadAt,
+                        User = rs.User != null ? new
+                        {
+                            rs.User.FirstName,
+                            rs.User.LastName,
+                            rs.User.Email
+                        } : null
+                    })
+                });
+            }
+            
+            return Ok(responseWithReadStatus);
         }
 
         [HttpGet("search/{message}")]
@@ -25,6 +74,55 @@ namespace CMKITTalep.API.Controllers
         {
             var requestResponses = await _requestResponseService.GetByMessageContainingAsync(message);
             return Ok(requestResponses);
+        }
+
+        [HttpGet("unread")]
+        public async Task<ActionResult<IEnumerable<MessageReadStatus>>> GetUnreadMessages()
+        {
+            // Kullanıcı ID'sini token'dan al
+            var userIdClaim = HttpContext.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
+            var unreadMessages = await _messageReadStatusService.GetUnreadMessagesByUserIdAsync(userId);
+            return Ok(unreadMessages);
+        }
+
+        [HttpPost("mark-read/{messageId}")]
+        public async Task<IActionResult> MarkAsRead(int messageId)
+        {
+            // Kullanıcı ID'sini token'dan al
+            var userIdClaim = HttpContext.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
+            await _messageReadStatusService.MarkMessageAsReadByUserAsync(messageId, userId);
+            return Ok(new { message = "Message marked as read" });
+        }
+
+        [HttpPost("mark-conversation-read/{requestId}")]
+        public async Task<IActionResult> MarkConversationAsRead(int requestId)
+        {
+            // Kullanıcı ID'sini token'dan al
+            var userIdClaim = HttpContext.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
+            await _messageReadStatusService.MarkConversationAsReadByUserAsync(requestId, userId);
+            return Ok(new { message = "Conversation marked as read" });
+        }
+
+        [HttpGet("read-status/{messageId}")]
+        public async Task<ActionResult<IEnumerable<MessageReadStatus>>> GetMessageReadStatus(int messageId)
+        {
+            var readStatuses = await _messageReadStatusService.GetReadStatusesByMessageIdAsync(messageId);
+            return Ok(readStatuses);
         }
 
         [HttpPost]
@@ -35,7 +133,53 @@ namespace CMKITTalep.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            return await base.Create(entity);
+            // SenderId'yi token'dan al
+            var userIdClaim = HttpContext.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token" });
+            }
+
+            entity.SenderId = userId;
+
+            var result = await base.Create(entity);
+
+            // Send notification email to request creator
+            try
+            {
+                Console.WriteLine($"DEBUG: RequestResponse - Sending notification for RequestId: {entity.RequestId}");
+                var request = await _requestService.GetByIdAsync(entity.RequestId);
+                Console.WriteLine($"DEBUG: RequestResponse - Request found: {request?.Id}, RequestCreator: {request?.RequestCreator?.FirstName} {request?.RequestCreator?.LastName}");
+                
+                if (request != null && request.RequestCreator != null)
+                {
+                    var responseType = "Genel Cevap";
+                    var requesterName = $"{request.RequestCreator.FirstName} {request.RequestCreator.LastName}";
+                    Console.WriteLine($"DEBUG: RequestResponse - Sending email to: {request.RequestCreator.Email}, Requester: {requesterName}");
+                    
+                    await _emailService.SendRequestResponseNotificationAsync(
+                        request.RequestCreator.Email,
+                        requesterName,
+                        request.Description,
+                        entity.Message,
+                        responseType
+                    );
+                    
+                    Console.WriteLine("DEBUG: RequestResponse - Email sent successfully!");
+                }
+                else
+                {
+                    Console.WriteLine("DEBUG: RequestResponse - Request or RequestCreator is null!");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the response creation
+                Console.WriteLine($"DEBUG: RequestResponse - Failed to send notification email: {ex.Message}");
+                Console.WriteLine($"DEBUG: RequestResponse - Stack trace: {ex.StackTrace}");
+            }
+
+            return result;
         }
 
         [HttpPut("{id}")]
