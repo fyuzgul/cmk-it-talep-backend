@@ -247,13 +247,8 @@ namespace CMKITTalep.API.Hubs
             var senderId = GetUserId();
             if (senderId.HasValue)
             {
-                await Clients.Group(groupName).SendAsync("ReceiveMessage", new
-                {
-                    SenderId = senderId.Value,
-                    Message = message,
-                    Timestamp = DateTime.UtcNow,
-                    GroupName = groupName
-                });
+                // Frontend'ten gelen mesaj objesini direkt kullan
+                await Clients.Group(groupName).SendAsync("ReceiveMessage", message);
             }
         }
 
