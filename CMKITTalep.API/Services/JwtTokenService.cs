@@ -21,6 +21,13 @@ namespace CMKITTalep.API.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            // Debug: User bilgilerini logla
+            Console.WriteLine($"🔍 JWT Token Generation - User ID: {user.Id}");
+            Console.WriteLine($"🔍 JWT Token Generation - FirstName: '{user.FirstName}'");
+            Console.WriteLine($"🔍 JWT Token Generation - LastName: '{user.LastName}'");
+            Console.WriteLine($"🔍 JWT Token Generation - Email: '{user.Email}'");
+            Console.WriteLine($"🔍 JWT Token Generation - FullName: '{user.FirstName} {user.LastName}'");
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
