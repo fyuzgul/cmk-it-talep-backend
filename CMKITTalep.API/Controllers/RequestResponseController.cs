@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
 using CMKITTalep.API.Services;
+using Microsoft.AspNetCore.SignalR;
+using CMKITTalep.API.Hubs;
 
 namespace CMKITTalep.API.Controllers
 {
@@ -11,13 +13,15 @@ namespace CMKITTalep.API.Controllers
         private readonly IRequestService _requestService;
         private readonly IEmailService _emailService;
         private readonly IMessageReadStatusService _messageReadStatusService;
+        private readonly IHubContext<MessageHub> _hubContext;
 
-        public RequestResponseController(IRequestResponseService requestResponseService, IRequestService requestService, IEmailService emailService, IMessageReadStatusService messageReadStatusService) : base(requestResponseService)
+        public RequestResponseController(IRequestResponseService requestResponseService, IRequestService requestService, IEmailService emailService, IMessageReadStatusService messageReadStatusService, IHubContext<MessageHub> hubContext) : base(requestResponseService)
         {
             _requestResponseService = requestResponseService;
             _requestService = requestService;
             _emailService = emailService;
             _messageReadStatusService = messageReadStatusService;
+            _hubContext = hubContext;
         }
 
         [HttpGet("request/{requestId}")]
@@ -101,6 +105,15 @@ namespace CMKITTalep.API.Controllers
             }
 
             await _messageReadStatusService.MarkMessageAsReadByUserAsync(messageId, userId);
+            
+            // SignalR ile mesajın okunduğunu bildir
+            await _hubContext.Clients.All.SendAsync("MessageRead", new
+            {
+                MessageId = messageId,
+                UserId = userId,
+                ReadAt = DateTime.UtcNow
+            });
+            
             return Ok(new { message = "Message marked as read" });
         }
 
@@ -143,6 +156,22 @@ namespace CMKITTalep.API.Controllers
             entity.SenderId = userId;
 
             var result = await base.Create(entity);
+
+            // SignalR ile yeni mesajı bildir
+            if (result.Value != null)
+            {
+                await _hubContext.Clients.Group($"Request_{entity.RequestId}").SendAsync("ReceiveMessage", new
+                {
+                    result.Value.Id,
+                    result.Value.Message,
+                    result.Value.FilePath,
+                    result.Value.RequestId,
+                    result.Value.SenderId,
+                    result.Value.CreatedDate,
+                    IsReadByCurrentUser = false,
+                    ReadByUsers = new List<object>()
+                });
+            }
 
             // Send notification email to request creator
             try

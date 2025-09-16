@@ -7,6 +7,7 @@ using CMKITTalep.Business.Services;
 using CMKITTalep.Entities;
 using CMKITTalep.API.Models;
 using CMKITTalep.API.Services;
+using CMKITTalep.API.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -59,9 +60,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5000", "http://localhost:5001", "http://localhost:5173", "https://localhost:5173", "https://localhost:7097", "https://localhost:7098", "http://localhost:7097", "http://localhost:7098")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials() // SignalR için gerekli
+              .SetIsOriginAllowedToAllowWildcardSubdomains(); // Subdomain desteği
     });
 });
 
@@ -119,11 +122,91 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+            ClockSkew = TimeSpan.FromMinutes(5), // 5 dakika tolerans
+            RequireExpirationTime = true,
+            RequireSignedTokens = true,
+            ValidateActor = false,
+            ValidateTokenReplay = false
+        };
+        
+        // SignalR için JWT yapılandırması
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var path = context.HttpContext.Request.Path;
+                
+                // SignalR hub'ı için token kontrolü
+                if (path.StartsWithSegments("/messageHub"))
+                {
+                    // Query parameter'dan token al
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                        Console.WriteLine("🔑 SignalR Token from query received");
+                        Console.WriteLine($"🔑 SignalR Path: {path}");
+                        return Task.CompletedTask;
+                    }
+                    
+                    // Authorization header'dan token al
+                    var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                    {
+                        var tokenString = authHeader.Substring("Bearer ".Length).Trim();
+                        context.Token = tokenString;
+                        Console.WriteLine("🔑 SignalR Token from header received");
+                        Console.WriteLine($"🔑 SignalR Path: {path}");
+                        return Task.CompletedTask;
+                    }
+                    
+                    Console.WriteLine($"🔑 SignalR Token not found - Path: {path}");
+                }
+                
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"❌ JWT Authentication Failed: {context.Exception?.Message}");
+                Console.WriteLine($"❌ JWT Authentication Failed - Path: {context.HttpContext.Request.Path}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine($"✅ JWT Token Validated - User: {context.Principal?.Identity?.Name}");
+                Console.WriteLine($"✅ JWT Claims count: {context.Principal?.Claims?.Count() ?? 0}");
+                if (context.Principal?.Claims != null)
+                {
+                    foreach (var claim in context.Principal.Claims)
+                    {
+                        Console.WriteLine($"✅ JWT Claim: {claim.Type} = {claim.Value}");
+                    }
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
 builder.Services.AddAuthorization();
+
+// SignalR Configuration
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+    options.MaximumReceiveMessageSize = 1024 * 1024;
+    options.StreamBufferCapacity = 10;
+})
+.AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.PayloadSerializerOptions.WriteIndented = false;
+});
+
+// Background Service for cleaning up inactive users
 
 var app = builder.Build();
 
@@ -156,10 +239,21 @@ app.UseHttpsRedirection();
 // Enable CORS
 app.UseCors("AllowAll");
 
+// CORS debugging
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"CORS Request - Origin: {context.Request.Headers.Origin}, Method: {context.Request.Method}, Path: {context.Request.Path}");
+    await next();
+});
+
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SignalR Hub mapping
+app.MapHub<MessageHub>("/messageHub");
+// Authorization hub içinde kontrol edilecek
 
 app.Run();

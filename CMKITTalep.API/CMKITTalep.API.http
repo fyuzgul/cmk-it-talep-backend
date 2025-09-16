@@ -1,7 +1,166 @@
 @CMKITTalep.API_HostAddress = https://localhost:7097
 
-# Test - Get Requests by Creator ID (6 ile test)
-GET {{CMKITTalep.API_HostAddress}}/api/Request/creator/6
+### 1. KULLANICI GİRİŞİ (TALEP AÇAN KULLANICI)
+POST {{CMKITTalep.API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+### 2. TALEP TİPLERİNİ LİSTELE
+GET {{CMKITTalep.API_HostAddress}}/api/RequestType
 Accept: application/json
+
+### 3. YENİ TALEP AÇ
+POST {{CMKITTalep.API_HostAddress}}/api/Request
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "requestCreatorId": 6,
+  "description": "Bilgisayarımda yavaşlama sorunu yaşıyorum. Programlar geç açılıyor ve donuyor.",
+  "screenshotFilePath": "/uploads/screenshot1.png",
+  "requestTypeId": 1
+}
+
+### 4. TALEP DETAYLARINI GÖRÜNTÜLE
+GET {{CMKITTalep.API_HostAddress}}/api/Request/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 5. DESTEK EKİBİ GİRİŞİ
+POST {{CMKITTalep.API_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "support@example.com",
+  "password": "support123"
+}
+
+### 6. TALEPE MESAJ GÖNDER (DESTEK EKİBİ)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse
+Content-Type: application/json
+Authorization: Bearer {{support_token}}
+
+{
+  "message": "Merhaba! Talebinizi inceledim. Sistem performans sorununuz için birkaç çözüm önerebilirim. Önce bilgisayarınızı yeniden başlatmayı deneyin.",
+  "requestId": 1
+}
+
+### 7. TALEPE MESAJ GÖNDER (KULLANICI)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "message": "Teşekkürler! Yeniden başlattım ama sorun devam ediyor. Özellikle Excel ve Word programları çok yavaş açılıyor.",
+  "requestId": 1
+}
+
+### 8. TALEPE MESAJ GÖNDER (DESTEK EKİBİ - 2. MESAJ)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse
+Content-Type: application/json
+Authorization: Bearer {{support_token}}
+
+{
+  "message": "Anladım. Bu durumda disk temizliği yapmanızı öneriyorum. Disk Temizleme aracını çalıştırın ve geçici dosyaları silin. Ayrıca başlangıç programlarını kontrol edelim.",
+  "requestId": 1
+}
+
+### 9. TALEP MESAJLARINI GÖRÜNTÜLE (OKUMA DURUMLARI İLE)
+GET {{CMKITTalep.API_HostAddress}}/api/RequestResponse/request/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 10. MESAJI OKUNDU OLARAK İŞARETLE (KULLANICI)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse/mark-read/1
+Authorization: Bearer {{auth_token}}
+
+### 11. MESAJI OKUNDU OLARAK İŞARETLE (DESTEK EKİBİ)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse/mark-read/2
+Authorization: Bearer {{support_token}}
+
+### 12. TÜM KONUŞMAYI OKUNDU OLARAK İŞARETLE
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse/mark-conversation-read/1
+Authorization: Bearer {{auth_token}}
+
+### 13. MESAJ OKUMA DURUMLARINI GÖRÜNTÜLE
+GET {{CMKITTalep.API_HostAddress}}/api/RequestResponse/read-status/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 14. OKUNMAMIŞ MESAJLARI LİSTELE
+GET {{CMKITTalep.API_HostAddress}}/api/RequestResponse/unread
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 15. ÇEVRİMİÇİ KULLANICILARI LİSTELE
+GET {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/online-users
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 16. KULLANICI ÇEVRİMİÇİ DURUMUNU KONTROL ET
+GET {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/user/6/is-online
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 17. SON GÖRÜLME ZAMANINI GÜNCELLE
+POST {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/update-last-seen
+Authorization: Bearer {{auth_token}}
+
+### 17.1. TEST - KULLANICIYI ÇEVRİMİÇİ YAP (ID: 6)
+POST {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/set-online/6
+Authorization: Bearer {{auth_token}}
+
+### 17.2. TEST - KULLANICIYI ÇEVRİMİÇİ YAP (ID: 2)
+POST {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/set-online/2
+Authorization: Bearer {{support_token}}
+
+### 17.3. ÇEVRİMİÇİ KULLANICILARI TEKRAR KONTROL ET
+GET {{CMKITTalep.API_HostAddress}}/api/OnlineStatus/online-users
+Accept: application/json
+Authorization: Bearer {{auth_token}}
+
+### 18. TALEPE MESAJ GÖNDER (DESTEK EKİBİ - 3. MESAJ)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse
+Content-Type: application/json
+Authorization: Bearer {{support_token}}
+
+{
+  "message": "Disk temizliği işe yaradı mı? Eğer hala sorun devam ediyorsa, sistem kaynaklarını kontrol etmek için Görev Yöneticisi'ni açıp CPU ve RAM kullanımına bakabilir misiniz?",
+  "requestId": 1
+}
+
+### 19. TALEPE MESAJ GÖNDER (KULLANICI - 2. MESAJ)
+POST {{CMKITTalep.API_HostAddress}}/api/RequestResponse
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "message": "Evet, disk temizliği işe yaradı! Şimdi programlar daha hızlı açılıyor. Teşekkür ederim, sorun çözüldü.",
+  "requestId": 1
+}
+
+### 20. TALEP DURUMUNU GÜNCELLE (KAPAT)
+PUT {{CMKITTalep.API_HostAddress}}/api/Request/1
+Content-Type: application/json
+Authorization: Bearer {{support_token}}
+
+{
+  "id": 1,
+  "requestCreatorId": 6,
+  "description": "Bilgisayarımda yavaşlama sorunu yaşıyorum. Programlar geç açılıyor ve donuyor.",
+  "screenshotFilePath": "/uploads/screenshot1.png",
+  "requestStatusId": 3,
+  "requestTypeId": 1,
+  "supportProviderId": 2
+}
+
+### 21. SON DURUM - TALEP MESAJLARINI GÖRÜNTÜLE
+GET {{CMKITTalep.API_HostAddress}}/api/RequestResponse/request/1
+Accept: application/json
+Authorization: Bearer {{auth_token}}
 
 ###

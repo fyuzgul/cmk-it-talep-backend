@@ -10,5 +10,8 @@ namespace CMKITTalep.Business.Interfaces
         Task<IEnumerable<User>> GetByUserTypeIdAsync(int userTypeId);
         Task<IEnumerable<User>> GetSupportUsersBySupportTypeIdAsync(int supportTypeId);
         bool VerifyPassword(string password, string hashedPassword);
+        
+        // Mesajlaşma için ek metodlar
+        Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<int> userIds);
     }
 }

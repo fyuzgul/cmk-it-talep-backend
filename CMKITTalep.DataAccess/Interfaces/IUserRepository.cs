@@ -9,5 +9,8 @@ namespace CMKITTalep.DataAccess.Interfaces
         Task<IEnumerable<User>> GetByDepartmentIdAsync(int departmentId);
         Task<IEnumerable<User>> GetByUserTypeIdAsync(int userTypeId);
         Task<IEnumerable<User>> GetSupportUsersBySupportTypeIdAsync(int supportTypeId);
+        
+        // Mesajlaşma için ek metodlar
+        Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<int> userIds);
     }
 }

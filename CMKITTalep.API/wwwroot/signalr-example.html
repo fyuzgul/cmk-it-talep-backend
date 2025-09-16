@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR Mesajlaşma Örneği</title>
+    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .user-message { background-color: #e3f2fd; margin-left: 20px; }
+        .support-message { background-color: #f3e5f5; margin-right: 20px; }
+        .online-users { background-color: #e8f5e8; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .typing-indicator { font-style: italic; color: #666; }
+        .message-input { width: 100%; padding: 10px; margin: 10px 0; }
+        .send-button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .status { padding: 5px 10px; border-radius: 3px; margin: 5px; display: inline-block; }
+        .online { background-color: #4caf50; color: white; }
+        .offline { background-color: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 CMK IT Talep - Anlık Mesajlaşma</h1>
+        
+        <div>
+            <h3>Bağlantı Durumu</h3>
+            <div id="connectionStatus">Bağlanıyor...</div>
+        </div>
+
+        <div class="online-users">
+            <h3>🟢 Çevrimiçi Kullanıcılar</h3>
+            <div id="onlineUsers">Yükleniyor...</div>
+        </div>
+
+        <div>
+            <h3>Mesajlaşma</h3>
+            <div>
+                <label>Talep ID:</label>
+                <input type="number" id="requestId" value="1" style="width: 100px; padding: 5px;">
+                <button onclick="joinRoom()">Odaya Katıl</button>
+                <button onclick="leaveRoom()">Odadan Ayrıl</button>
+            </div>
+            
+            <div id="messages" style="height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <!-- Mesajlar burada görünecek -->
+            </div>
+
+            <div>
+                <input type="text" id="messageInput" class="message-input" placeholder="Mesajınızı yazın..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()" class="send-button">Gönder</button>
+            </div>
+
+            <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                <!-- Yazıyor göstergesi -->
+            </div>
+        </div>
+
+        <div>
+            <h3>Test Butonları</h3>
+            <button onclick="markMessageAsRead(1)">Mesaj 1'i Okundu İşaretle</button>
+            <button onclick="updateLastSeen()">Son Görülme Zamanını Güncelle</button>
+            <button onclick="getOnlineUsers()">Çevrimiçi Kullanıcıları Yenile</button>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+        let currentRequestId = 1;
+
+        // SignalR bağlantısını başlat
+        async function startConnection() {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/messageHub", {
+                    accessTokenFactory: () => {
+                        // Burada JWT token'ınızı döndürün
+                        return localStorage.getItem('authToken') || '';
+                    }
+                })
+                .build();
+
+            // Bağlantı olayları
+            connection.onclose(async () => {
+                console.log("Bağlantı kapatıldı");
+                document.getElementById('connectionStatus').innerHTML = '<span class="status offline">Bağlantı Kesildi</span>';
+                setTimeout(startConnection, 5000);
+            });
+
+            // Mesaj alma
+            connection.on("ReceiveMessage", (message) => {
+                addMessageToUI(message);
+            });
+
+            // Mesaj okundu bildirimi
+            connection.on("MessageRead", (data) => {
+                console.log(`Mesaj ${data.messageId} kullanıcı ${data.userId} tarafından okundu`);
+                updateMessageReadStatus(data.messageId, data.userId);
+            });
+
+            // Kullanıcı çevrimiçi/çevrimdışı
+            connection.on("UserOnline", (userId) => {
+                console.log(`Kullanıcı ${userId} çevrimiçi oldu`);
+                updateUserStatus(userId, true);
+            });
+
+            connection.on("UserOffline", (userId) => {
+                console.log(`Kullanıcı ${userId} çevrimdışı oldu`);
+                updateUserStatus(userId, false);
+            });
+
+            // Yazıyor göstergesi
+            connection.on("UserTyping", (data) => {
+                showTypingIndicator(data.userId, data.isTyping);
+            });
+
+            // Çevrimiçi kullanıcılar
+            connection.on("OnlineUsers", (users) => {
+                updateOnlineUsers(users);
+            });
+
+            // Kullanıcı durumu değişikliği (API'den gelen)
+            connection.on("UserStatusChanged", (data) => {
+                console.log(`Kullanıcı durumu değişti: ${data.userId} - ${data.isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}`);
+                updateUserStatus(data.userId, data.isOnline);
+                // Çevrimiçi kullanıcı listesini yenile
+                loadOnlineUsers();
+            });
+
+            try {
+                await connection.start();
+                console.log("SignalR bağlantısı başarılı");
+                document.getElementById('connectionStatus').innerHTML = '<span class="status online">Bağlı</span>';
+                
+                // Çevrimiçi kullanıcıları al
+                await connection.invoke("GetOnlineUsers");
+            } catch (err) {
+                console.error("SignalR bağlantı hatası:", err);
+                document.getElementById('connectionStatus').innerHTML = '<span class="status offline">Bağlantı Hatası</span>';
+            }
+        }
+
+        // Odaya katıl
+        async function joinRoom() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                currentRequestId = parseInt(document.getElementById('requestId').value);
+                await connection.invoke("JoinRequestRoom", currentRequestId);
+                console.log(`Talep ${currentRequestId} odasına katıldı`);
+            }
+        }
+
+        // Odadan ayrıl
+        async function leaveRoom() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                await connection.invoke("LeaveRequestRoom", currentRequestId);
+                console.log(`Talep ${currentRequestId} odasından ayrıldı`);
+            }
+        }
+
+        // Mesaj gönder
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message && connection && connection.state === signalR.HubConnectionState.Connected) {
+                await connection.invoke("SendMessage", currentRequestId, message);
+                messageInput.value = '';
+            }
+        }
+
+        // Enter tuşu ile mesaj gönder
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Mesajı UI'ya ekle
+        function addMessageToUI(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+            messageDiv.innerHTML = `
+                <strong>Mesaj ${message.id}:</strong> ${message.message}
+                <br><small>Gönderen: ${message.senderId} | Tarih: ${new Date(message.createdDate).toLocaleString()}</small>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Mesaj okundu durumunu güncelle
+        function updateMessageReadStatus(messageId, userId) {
+            console.log(`Mesaj ${messageId} kullanıcı ${userId} tarafından okundu`);
+        }
+
+        // Kullanıcı durumunu güncelle
+        function updateUserStatus(userId, isOnline) {
+            const status = isOnline ? 'online' : 'offline';
+            console.log(`Kullanıcı ${userId} durumu: ${status}`);
+        }
+
+        // Çevrimiçi kullanıcıları güncelle
+        function updateOnlineUsers(users) {
+            const onlineUsersDiv = document.getElementById('onlineUsers');
+            onlineUsersDiv.innerHTML = users.map(user => 
+                `<span class="status ${user.isOnline ? 'online' : 'offline'}">
+                    ${user.user ? user.user.firstName + ' ' + user.user.lastName : 'Kullanıcı ' + user.userId}
+                    ${user.isOnline ? '🟢' : '🔴'}
+                </span>`
+            ).join(' ');
+        }
+
+        // Yazıyor göstergesi
+        function showTypingIndicator(userId, isTyping) {
+            const indicator = document.getElementById('typingIndicator');
+            if (isTyping) {
+                indicator.textContent = `Kullanıcı ${userId} yazıyor...`;
+                indicator.style.display = 'block';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Mesajı okundu işaretle
+        async function markMessageAsRead(messageId) {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                await connection.invoke("MarkMessageAsRead", messageId);
+            }
+        }
+
+        // Son görülme zamanını güncelle
+        async function updateLastSeen() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                await connection.invoke("UpdateLastSeen");
+            }
+        }
+
+        // Çevrimiçi kullanıcıları al
+        async function getOnlineUsers() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                await connection.invoke("GetOnlineUsers");
+            }
+        }
+
+        // Sayfa yüklendiğinde bağlantıyı başlat
+        window.addEventListener('load', startConnection);
+    </script>
+</body>
+</html>

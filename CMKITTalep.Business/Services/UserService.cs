@@ -85,5 +85,11 @@ namespace CMKITTalep.Business.Services
         {
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
+
+        // Mesajlaşma için ek metodlar
+        public async Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<int> userIds)
+        {
+            return await _userRepository.GetUsersByIdsAsync(userIds);
+        }
     }
 }

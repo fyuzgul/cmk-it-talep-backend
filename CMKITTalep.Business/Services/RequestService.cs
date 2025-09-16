@@ -42,5 +42,31 @@ namespace CMKITTalep.Business.Services
         {
             return await _requestRepository.GetByDescriptionContainingAsync(description);
         }
+
+        // Mesajlaşma metodları
+        public async Task<IEnumerable<Request>> GetUserChatRequestsAsync(int userId)
+        {
+            return await _requestRepository.GetUserChatRequestsAsync(userId);
+        }
+
+        public async Task<bool> UserHasAccessToRequestAsync(int userId, int requestId)
+        {
+            return await _requestRepository.UserHasAccessToRequestAsync(userId, requestId);
+        }
+
+        public async Task<IEnumerable<RequestResponse>> GetRequestMessagesAsync(int requestId)
+        {
+            return await _requestRepository.GetRequestMessagesAsync(requestId);
+        }
+
+        public async Task<RequestResponse> AddRequestMessageAsync(int requestId, int userId, string message, string? filePath = null)
+        {
+            return await _requestRepository.AddRequestMessageAsync(requestId, userId, message, filePath);
+        }
+
+        public async Task MarkMessageAsReadAsync(int messageId, int userId)
+        {
+            await _requestRepository.MarkMessageAsReadAsync(messageId, userId);
+        }
     }
 }

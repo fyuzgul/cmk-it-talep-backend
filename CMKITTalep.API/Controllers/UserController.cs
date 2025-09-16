@@ -97,5 +97,26 @@ namespace CMKITTalep.API.Controllers
         {
             return await base.Delete(id);
         }
+
+        // Mesajlaşma için ek metodlar
+        [HttpPost("GetByIds")]
+        [RequireAuthenticated]
+        public async Task<ActionResult<IEnumerable<User>>> GetByIds([FromBody] GetUsersByIdsRequest request)
+        {
+            try
+            {
+                var users = await _userService.GetUsersByIdsAsync(request.Ids);
+                return Ok(new { success = true, data = users });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Sunucu hatası: " + ex.Message });
+            }
+        }
+    }
+
+    public class GetUsersByIdsRequest
+    {
+        public IEnumerable<int> Ids { get; set; } = new List<int>();
     }
 }

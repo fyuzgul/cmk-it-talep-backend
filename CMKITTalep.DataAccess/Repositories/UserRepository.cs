@@ -62,5 +62,15 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(u => u.UserType)
                                .FirstOrDefaultAsync(u => u.Id == id);
         }
+
+        // Mesajlaşma için ek metodlar
+        public async Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<int> userIds)
+        {
+            return await _dbSet
+                .Where(u => userIds.Contains(u.Id))
+                .Include(u => u.Department)
+                .Include(u => u.UserType)
+                .ToListAsync();
+        }
     }
 }

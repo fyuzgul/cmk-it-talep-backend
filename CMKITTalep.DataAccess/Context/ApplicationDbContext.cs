@@ -214,6 +214,7 @@ namespace CMKITTalep.DataAccess.Context
                 entity.HasQueryFilter(e => !e.IsDeleted);
             });
 
+
             // PasswordResetToken entity configuration
             modelBuilder.Entity<PasswordResetToken>(entity =>
             {

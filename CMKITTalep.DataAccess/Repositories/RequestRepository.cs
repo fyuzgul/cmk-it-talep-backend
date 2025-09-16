@@ -106,5 +106,70 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestType)
                                .FirstOrDefaultAsync();
         }
+
+        // Mesajlaşma metodları
+        public async Task<IEnumerable<Request>> GetUserChatRequestsAsync(int userId)
+        {
+            return await _dbSet
+                .Where(r => !r.IsDeleted && (r.RequestCreatorId == userId || r.SupportProviderId == userId))
+                .Include(r => r.SupportProvider)
+                .Include(r => r.RequestCreator)
+                .Include(r => r.RequestStatus)
+                .Include(r => r.RequestType)
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<bool> UserHasAccessToRequestAsync(int userId, int requestId)
+        {
+            return await _dbSet
+                .AnyAsync(r => r.Id == requestId && !r.IsDeleted && 
+                              (r.RequestCreatorId == userId || r.SupportProviderId == userId));
+        }
+
+        public async Task<IEnumerable<RequestResponse>> GetRequestMessagesAsync(int requestId)
+        {
+            return await _context.RequestResponses
+                .Where(rr => rr.RequestId == requestId && !rr.IsDeleted)
+                .Include(rr => rr.Sender)
+                .OrderBy(rr => rr.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<RequestResponse> AddRequestMessageAsync(int requestId, int userId, string message, string? filePath = null)
+        {
+            var requestResponse = new RequestResponse
+            {
+                RequestId = requestId,
+                SenderId = userId,
+                Message = message,
+                FilePath = filePath,
+                CreatedDate = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            _context.RequestResponses.Add(requestResponse);
+            await _context.SaveChangesAsync();
+
+            // Include navigation properties
+            return await _context.RequestResponses
+                .Include(rr => rr.Sender)
+                .FirstAsync(rr => rr.Id == requestResponse.Id);
+        }
+
+        public async Task MarkMessageAsReadAsync(int messageId, int userId)
+        {
+            // Bu metod MessageReadStatus tablosunu kullanabilir
+            // Şimdilik basit bir implementasyon
+            var message = await _context.RequestResponses
+                .FirstOrDefaultAsync(rr => rr.Id == messageId && !rr.IsDeleted);
+            
+            if (message != null)
+            {
+                // Mesaj okundu olarak işaretleme işlemi burada yapılabilir
+                // Şimdilik sadece log yazıyoruz
+                Console.WriteLine($"Message {messageId} marked as read by user {userId}");
+            }
+        }
     }
 }
