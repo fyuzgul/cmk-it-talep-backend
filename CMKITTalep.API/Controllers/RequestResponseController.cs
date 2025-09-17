@@ -164,7 +164,10 @@ namespace CMKITTalep.API.Controllers
                 {
                     result.Value.Id,
                     result.Value.Message,
-                    result.Value.FilePath,
+                    result.Value.FilePath, // Backward compatibility
+                    result.Value.FileBase64,
+                    result.Value.FileName,
+                    result.Value.FileMimeType,
                     result.Value.RequestId,
                     result.Value.SenderId,
                     result.Value.CreatedDate,

@@ -6,7 +6,10 @@ namespace CMKITTalep.Entities
         public int? SupportProviderId { get; set; } // Foreign Key to User (Destek Veren)
         public int RequestCreatorId { get; set; } // Foreign Key to User (Talep Açan)
         public string Description { get; set; } = string.Empty;
-        public string? ScreenshotFilePath { get; set; } // File path for screenshot
+        public string? ScreenshotFilePath { get; set; } // File path for screenshot (deprecated)
+        public string? ScreenshotBase64 { get; set; } // Base64 encoded screenshot
+        public string? ScreenshotFileName { get; set; } // Screenshot dosya adı
+        public string? ScreenshotMimeType { get; set; } // Screenshot MIME türü
         public int RequestStatusId { get; set; } // Foreign Key to RequestStatus
         public int RequestTypeId { get; set; } // Foreign Key to RequestType
         public DateTime CreatedDate { get; set; } = DateTime.Now;
