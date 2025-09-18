@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CMKITTalep.Business.Interfaces;
 using CMKITTalep.Entities;
 using CMKITTalep.API.Services;
+using CMKITTalep.API.Models;
 
 namespace CMKITTalep.API.Controllers
 {
@@ -12,14 +13,16 @@ namespace CMKITTalep.API.Controllers
         private readonly IRequestTypeService _requestTypeService;
         private readonly IRequestStatusService _requestStatusService;
         private readonly IEmailService _emailService;
+        private readonly IRequestCCService _requestCCService;
 
-        public RequestController(IRequestService requestService, IUserService userService, IRequestTypeService requestTypeService, IRequestStatusService requestStatusService, IEmailService emailService) : base(requestService)
+        public RequestController(IRequestService requestService, IUserService userService, IRequestTypeService requestTypeService, IRequestStatusService requestStatusService, IEmailService emailService, IRequestCCService requestCCService) : base(requestService)
         {
             _requestService = requestService;
             _userService = userService;
             _requestTypeService = requestTypeService;
             _requestStatusService = requestStatusService;
             _emailService = emailService;
+            _requestCCService = requestCCService;
         }
 
         [HttpGet("supportprovider/{supportProviderId}")]
@@ -68,6 +71,184 @@ namespace CMKITTalep.API.Controllers
         {
             var requests = await _requestService.GetByDescriptionContainingAsync(description);
             return Ok(requests);
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult<Request>> CreateWithCC([FromBody] CreateRequestRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Create the request entity
+            var entity = new Request
+            {
+                RequestCreatorId = request.RequestCreatorId,
+                RequestTypeId = request.RequestTypeId,
+                PriorityLevelId = request.PriorityLevelId,
+                Description = request.Description,
+                ScreenshotFilePath = request.ScreenshotFilePath,
+                ScreenshotBase64 = request.ScreenshotBase64,
+                ScreenshotFileName = request.ScreenshotFileName,
+                ScreenshotMimeType = request.ScreenshotMimeType,
+                SupportProviderId = null, // Support provider will be assigned later
+                RequestStatusId = 1, // Default status (e.g., "Open" or "Pending")
+                CreatedDate = DateTime.Now
+            };
+
+            var result = await base.Create(entity);
+
+            // Add CC users if any
+            if (request.CCUserIds.Any())
+            {
+                try
+                {
+                    Console.WriteLine($"DEBUG: Adding CC users: [{string.Join(", ", request.CCUserIds)}]");
+                    
+                    // Get the created request from the result
+                    Request? createdRequest = null;
+                    if (result.Result is CreatedAtActionResult createdResult && createdResult.Value is Request requestValue)
+                    {
+                        createdRequest = requestValue;
+                    }
+                    else if (result.Value != null)
+                    {
+                        createdRequest = result.Value;
+                    }
+                    
+                    Console.WriteLine($"DEBUG: Created request ID: {createdRequest?.Id}");
+                    
+                    if (createdRequest != null)
+                    {
+                        await _requestCCService.UpdateCCUsersAsync(createdRequest.Id, request.CCUserIds);
+                        Console.WriteLine($"DEBUG: CC users added successfully");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"DEBUG: Created request is null, cannot add CC users");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"DEBUG: Failed to add CC users: {ex.Message}");
+                    Console.WriteLine($"DEBUG: Stack trace: {ex.StackTrace}");
+                }
+            }
+
+            // Send notification emails
+            try
+            {
+                Console.WriteLine("DEBUG: Starting notification process for CreateWithCC...");
+                
+                // Get the created request from the result
+                Request? createdRequest = null;
+                if (result.Result is CreatedAtActionResult createdResult && createdResult.Value is Request requestValue)
+                {
+                    createdRequest = requestValue;
+                }
+                else if (result.Value != null)
+                {
+                    createdRequest = result.Value;
+                }
+                
+                Console.WriteLine($"DEBUG: Extracted request: {createdRequest?.Id}");
+                
+                if (createdRequest != null)
+                {
+                    Console.WriteLine($"DEBUG: Request created with ID: {createdRequest.Id}, RequestTypeId: {createdRequest.RequestTypeId}");
+                    Console.WriteLine($"DEBUG: RequestCreatorId: {createdRequest.RequestCreatorId}");
+                    
+                    // Get the request with navigation properties loaded
+                    var fullRequest = await _requestService.GetByIdAsync(createdRequest.Id);
+                    Console.WriteLine($"DEBUG: Full request loaded. RequestCreator: {fullRequest?.RequestCreator?.FirstName} {fullRequest?.RequestCreator?.LastName}");
+                    
+                    var requestType = await _requestTypeService.GetByIdAsync(createdRequest.RequestTypeId);
+                    Console.WriteLine($"DEBUG: RequestType found: {requestType?.Name}");
+                    
+                    var supportType = requestType?.SupportType;
+                    Console.WriteLine($"DEBUG: SupportType found: {supportType?.Name}, ID: {supportType?.Id}");
+                    
+                    if (supportType != null)
+                    {
+                        var supportUsers = await _userService.GetSupportUsersBySupportTypeIdAsync(supportType.Id);
+                        Console.WriteLine($"DEBUG: Found {supportUsers.Count()} support users");
+                        
+                        var supportEmails = supportUsers.Select(u => u.Email).ToList();
+                        Console.WriteLine($"DEBUG: Support emails: {string.Join(", ", supportEmails)}");
+                        
+                        if (supportEmails.Any())
+                        {
+                            var requesterName = "Bilinmeyen Kullanıcı";
+                            if (fullRequest?.RequestCreator != null)
+                            {
+                                requesterName = $"{fullRequest.RequestCreator.FirstName} {fullRequest.RequestCreator.LastName}";
+                            }
+                            Console.WriteLine($"DEBUG: Sending email to support users. Requester: {requesterName}");
+                            
+                            await _emailService.SendNewRequestNotificationAsync(
+                                supportEmails,
+                                requesterName,
+                                createdRequest.Description,
+                                requestType.Name,
+                                supportType.Name
+                            );
+                            
+                            // Send notification to CC users
+                            try
+                            {
+                                var ccUsers = await _requestCCService.GetByRequestIdAsync(createdRequest.Id);
+                                if (ccUsers.Any())
+                                {
+                                    var ccEmails = ccUsers.Select(cc => cc.User?.Email).Where(email => !string.IsNullOrEmpty(email)).ToList();
+                                    if (ccEmails.Any())
+                                    {
+                                        Console.WriteLine($"DEBUG: Sending CC notification to {ccEmails.Count} users");
+                                        await _emailService.SendNewRequestNotificationAsync(
+                                            ccEmails,
+                                            requesterName,
+                                            createdRequest.Description,
+                                            requestType.Name,
+                                            supportType.Name,
+                                            isCCNotification: true
+                                        );
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("DEBUG: No CC users found");
+                                }
+                            }
+                            catch (Exception ccEx)
+                            {
+                                Console.WriteLine($"DEBUG: Failed to send CC notification: {ccEx.Message}");
+                            }
+                            
+                            Console.WriteLine("DEBUG: Email sent successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("DEBUG: No support emails found!");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("DEBUG: SupportType is null!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("DEBUG: Result.Value is null!");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the request creation
+                Console.WriteLine($"DEBUG: Failed to send notification email: {ex.Message}");
+                Console.WriteLine($"DEBUG: Stack trace: {ex.StackTrace}");
+            }
+
+            return result;
         }
 
         [HttpPost]
@@ -145,6 +326,31 @@ namespace CMKITTalep.API.Controllers
                                 requestType.Name,
                                 supportType.Name
                             );
+                            
+                            // Send notification to CC users
+                            try
+                            {
+                                var ccUsers = await _requestCCService.GetByRequestIdAsync(request.Id);
+                                if (ccUsers.Any())
+                                {
+                                    var ccEmails = ccUsers.Select(cc => cc.User?.Email).Where(email => !string.IsNullOrEmpty(email)).ToList();
+                                    if (ccEmails.Any())
+                                    {
+                                        await _emailService.SendNewRequestNotificationAsync(
+                                            ccEmails,
+                                            requesterName,
+                                            request.Description,
+                                            requestType.Name,
+                                            supportType.Name,
+                                            isCCNotification: true
+                                        );
+                                    }
+                                }
+                            }
+                            catch (Exception ccEx)
+                            {
+                                Console.WriteLine($"DEBUG: Failed to send CC notification: {ccEx.Message}");
+                            }
                             
                             Console.WriteLine("DEBUG: Email sent successfully!");
                         }

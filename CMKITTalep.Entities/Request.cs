@@ -26,5 +26,8 @@ namespace CMKITTalep.Entities
         
         // Collection navigation property for responses to this request
         public ICollection<RequestResponse> RequestResponses { get; set; } = new List<RequestResponse>();
+        
+        // Collection navigation property for CC users
+        public ICollection<RequestCC> RequestCCs { get; set; } = new List<RequestCC>();
     }
 }

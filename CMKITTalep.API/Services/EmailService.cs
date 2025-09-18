@@ -73,7 +73,7 @@ namespace CMKITTalep.API.Services
             }
         }
 
-        public async Task SendNewRequestNotificationAsync(List<string> supportEmails, string requesterName, string requestDescription, string requestType, string supportType)
+        public async Task SendNewRequestNotificationAsync(List<string> supportEmails, string requesterName, string requestDescription, string requestType, string supportType, bool isCCNotification = false)
         {
             try
             {
@@ -88,8 +88,8 @@ namespace CMKITTalep.API.Services
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
-                    Subject = "CMK IT Talep - Yeni Talep Oluşturuldu",
-                    Body = CreateNewRequestEmailBody(requesterName, requestDescription, requestType, supportType),
+                    Subject = isCCNotification ? "CMK IT Talep - Talep Hakkında Bilgilendirme" : "CMK IT Talep - Yeni Talep Oluşturuldu",
+                    Body = CreateNewRequestEmailBody(requesterName, requestDescription, requestType, supportType, isCCNotification),
                     IsBodyHtml = true
                 };
 
@@ -230,7 +230,7 @@ namespace CMKITTalep.API.Services
             }
         }
 
-        private string CreateNewRequestEmailBody(string requesterName, string requestDescription, string requestType, string supportType)
+        private string CreateNewRequestEmailBody(string requesterName, string requestDescription, string requestType, string supportType, bool isCCNotification = false)
         {
             return $@"
                 <html>
@@ -238,12 +238,12 @@ namespace CMKITTalep.API.Services
                     <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
                         <div style='background-color: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;'>
                             <h2 style='color: #007bff; margin-bottom: 20px;'>CMK IT Talep Sistemi</h2>
-                            <h3 style='color: #ffc107; margin-bottom: 20px;'>Yeni Talep Oluşturuldu</h3>
+                            <h3 style='color: #ffc107; margin-bottom: 20px;'>{(isCCNotification ? "Talep Hakkında Bilgilendirme" : "Yeni Talep Oluşturuldu")}</h3>
                         </div>
                         
                         <div style='padding: 30px 20px;'>
                             <p>Merhaba,</p>
-                            <p>CMK IT Talep sisteminde yeni bir talep oluşturulmuştur ve sizin desteğinize ihtiyaç duyulmaktadır.</p>
+                            <p>{(isCCNotification ? "CMK IT Talep sisteminde oluşturulan bir talep hakkında bilgilendirilmektesiniz." : "CMK IT Talep sisteminde yeni bir talep oluşturulmuştur ve sizin desteğinize ihtiyaç duyulmaktadır.")}</p>
                             
                             <div style='background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;'>
                                 <h4 style='color: #333; margin-top: 0;'>Talep Detayları:</h4>
@@ -257,7 +257,7 @@ namespace CMKITTalep.API.Services
                                 <p style='margin: 0; white-space: pre-line;'>{requestDescription}</p>
                             </div>
                             
-                            <p>Lütfen sisteme giriş yaparak talebi inceleyin ve gerekli işlemleri gerçekleştirin.</p>
+                            <p>{(isCCNotification ? "Detaylı bilgi için sisteme giriş yapabilirsiniz." : "Lütfen sisteme giriş yaparak talebi inceleyin ve gerekli işlemleri gerçekleştirin.")}</p>
                             
                             <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;'>
                                 <p style='font-size: 12px; color: #6c757d; margin: 0;'>

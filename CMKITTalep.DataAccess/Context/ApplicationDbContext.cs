@@ -20,6 +20,7 @@ namespace CMKITTalep.DataAccess.Context
         public DbSet<MessageReadStatus> MessageReadStatuses { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
         public DbSet<PriorityLevel> PriorityLevels { get; set; }
+        public DbSet<RequestCC> RequestCCs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -248,6 +249,33 @@ namespace CMKITTalep.DataAccess.Context
                 // Index for faster lookups
                 entity.HasIndex(e => e.Token).IsUnique();
                 entity.HasIndex(e => e.Email);
+
+                // Global query filter for soft delete
+                entity.HasQueryFilter(e => !e.IsDeleted);
+            });
+
+            // RequestCC entity configuration
+            modelBuilder.Entity<RequestCC>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.RequestId).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.AddedDate).HasDefaultValueSql("GETDATE()");
+
+                // Foreign Key Relationships
+                entity.HasOne(rcc => rcc.Request)
+                      .WithMany(r => r.RequestCCs)
+                      .HasForeignKey(rcc => rcc.RequestId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(rcc => rcc.User)
+                      .WithMany()
+                      .HasForeignKey(rcc => rcc.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Unique constraint to prevent duplicate CC entries
+                entity.HasIndex(e => new { e.RequestId, e.UserId }).IsUnique();
 
                 // Global query filter for soft delete
                 entity.HasQueryFilter(e => !e.IsDeleted);
