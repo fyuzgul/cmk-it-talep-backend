@@ -19,6 +19,7 @@ namespace CMKITTalep.DataAccess.Context
         public DbSet<RequestResponse> RequestResponses { get; set; }
         public DbSet<MessageReadStatus> MessageReadStatuses { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+        public DbSet<PriorityLevel> PriorityLevels { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -120,6 +121,18 @@ namespace CMKITTalep.DataAccess.Context
                 entity.HasQueryFilter(e => !e.IsDeleted);
             });
 
+            // PriorityLevel entity configuration
+            modelBuilder.Entity<PriorityLevel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.Name).IsRequired();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
+                
+                // Global query filter for soft delete
+                entity.HasQueryFilter(e => !e.IsDeleted);
+            });
+
 
             // Request entity configuration
             modelBuilder.Entity<Request>(entity =>
@@ -132,6 +145,7 @@ namespace CMKITTalep.DataAccess.Context
                 entity.Property(e => e.ScreenshotFilePath).HasMaxLength(500);
                 entity.Property(e => e.RequestStatusId).IsRequired();
                 entity.Property(e => e.RequestTypeId).IsRequired();
+                entity.Property(e => e.PriorityLevelId).IsRequired();
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
 
                 // Foreign Key Relationships
@@ -154,6 +168,11 @@ namespace CMKITTalep.DataAccess.Context
                 entity.HasOne(r => r.RequestType)
                       .WithMany()
                       .HasForeignKey(r => r.RequestTypeId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.PriorityLevel)
+                      .WithMany()
+                      .HasForeignKey(r => r.PriorityLevelId)
                       .OnDelete(DeleteBehavior.Restrict);
 
                 // Global query filter for soft delete

@@ -81,6 +81,7 @@ namespace CMKITTalep.API.Controllers
             // Set default values for new requests
             entity.SupportProviderId = null; // Support provider will be assigned later
             entity.RequestStatusId = 1; // Default status (e.g., "Open" or "Pending")
+            // PriorityLevelId comes from frontend selection
 
             var result = await base.Create(entity);
 

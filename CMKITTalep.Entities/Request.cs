@@ -12,6 +12,7 @@ namespace CMKITTalep.Entities
         public string? ScreenshotMimeType { get; set; } // Screenshot MIME türü
         public int RequestStatusId { get; set; } // Foreign Key to RequestStatus
         public int RequestTypeId { get; set; } // Foreign Key to RequestType
+        public int PriorityLevelId { get; set; } // Foreign Key to PriorityLevel
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; } = false;
@@ -21,6 +22,7 @@ namespace CMKITTalep.Entities
         public User? RequestCreator { get; set; } // Talep Açan
         public RequestStatus? RequestStatus { get; set; }
         public RequestType? RequestType { get; set; }
+        public PriorityLevel? PriorityLevel { get; set; }
         
         // Collection navigation property for responses to this request
         public ICollection<RequestResponse> RequestResponses { get; set; } = new List<RequestResponse>();
