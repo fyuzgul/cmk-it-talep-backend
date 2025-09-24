@@ -19,7 +19,7 @@ namespace CMKITTalep.API.Attributes
 
             var userTypeClaim = user.FindFirst("UserType")?.Value;
             
-            if (userTypeClaim != "Support" && userTypeClaim != "Admin")
+            if (userTypeClaim?.ToLower() != "support" && userTypeClaim?.ToLower() != "admin")
             {
                 context.Result = new ForbidResult();
                 return;

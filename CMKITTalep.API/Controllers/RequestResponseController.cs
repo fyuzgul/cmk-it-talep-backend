@@ -36,6 +36,13 @@ namespace CMKITTalep.API.Controllers
 
             var requestResponses = await _requestResponseService.GetByRequestIdAsync(requestId);
             
+            // Debug: Sender bilgilerini kontrol et
+            Console.WriteLine($"DEBUG: Found {requestResponses.Count()} responses for request {requestId}");
+            foreach (var response in requestResponses)
+            {
+                Console.WriteLine($"Response {response.Id}: SenderId={response.SenderId}, Sender={response.Sender?.FirstName} {response.Sender?.LastName}");
+            }
+            
             // Her mesaj için okuma durumunu kontrol et ve ekle
             var responseWithReadStatus = new List<object>();
             foreach (var response in requestResponses)

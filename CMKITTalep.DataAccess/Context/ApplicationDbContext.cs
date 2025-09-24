@@ -21,6 +21,7 @@ namespace CMKITTalep.DataAccess.Context
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
         public DbSet<PriorityLevel> PriorityLevels { get; set; }
         public DbSet<RequestCC> RequestCCs { get; set; }
+        public DbSet<Inventory> Inventories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -277,6 +278,17 @@ namespace CMKITTalep.DataAccess.Context
                 // Unique constraint to prevent duplicate CC entries
                 entity.HasIndex(e => new { e.RequestId, e.UserId }).IsUnique();
 
+                // Global query filter for soft delete
+                entity.HasQueryFilter(e => !e.IsDeleted);
+            });
+
+            // Inventory entity configuration
+            modelBuilder.Entity<Inventory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETDATE()");
+                
                 // Global query filter for soft delete
                 entity.HasQueryFilter(e => !e.IsDeleted);
             });

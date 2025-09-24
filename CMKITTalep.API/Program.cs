@@ -88,6 +88,7 @@ builder.Services.AddScoped<IRequestResponseRepository, RequestResponseRepository
 builder.Services.AddScoped<IMessageReadStatusRepository, MessageReadStatusRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 builder.Services.AddScoped<IRequestCCRepository, RequestCCRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 
 // Services
 builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
@@ -103,6 +104,7 @@ builder.Services.AddScoped<IRequestResponseService, RequestResponseService>();
 builder.Services.AddScoped<IMessageReadStatusService, MessageReadStatusService>();
 builder.Services.AddScoped<IPasswordResetTokenService, PasswordResetTokenService>();
 builder.Services.AddScoped<IRequestCCService, RequestCCService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // SMTP Configuration
