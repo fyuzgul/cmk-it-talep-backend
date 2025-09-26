@@ -127,7 +127,10 @@ namespace CMKITTalep.API.Controllers
                     Message = message.Message,
                     FilePath = message.FilePath,
                     Timestamp = message.CreatedDate,
-                    RequestId = requestId
+                    RequestId = requestId,
+                    IsOwnMessage = true, // Yeni gönderilen mesaj kendi mesajı
+                    IsReadByCurrentUser = false,
+                    ReadByUsers = new List<object>()
                 });
 
                 return Ok(new { success = true, data = message });
@@ -150,6 +153,18 @@ namespace CMKITTalep.API.Controllers
                 if (!userId.HasValue)
                 {
                     return Unauthorized(new { success = false, message = "Kullanıcı kimliği bulunamadı" });
+                }
+
+                // Mesajın sahibini kontrol et - sadece kendi mesajları için okundu durumu işaretlenebilir
+                var message = await _requestService.GetRequestMessageByIdAsync(messageId);
+                if (message == null)
+                {
+                    return NotFound(new { success = false, message = "Mesaj bulunamadı" });
+                }
+
+                if (message.SenderId != userId.Value)
+                {
+                    return BadRequest(new { success = false, message = "Sadece kendi mesajlarınızı okundu olarak işaretleyebilirsiniz" });
                 }
 
                 await _requestService.MarkMessageAsReadAsync(messageId, userId.Value);

@@ -47,8 +47,49 @@ namespace CMKITTalep.API.Controllers
             var responseWithReadStatus = new List<object>();
             foreach (var response in requestResponses)
             {
-                var isRead = await _messageReadStatusService.IsMessageReadByUserAsync(response.Id, userId);
-                var readStatuses = await _messageReadStatusService.GetReadStatusesByMessageIdAsync(response.Id);
+                // Sadece kendi mesajları için okundu durumunu kontrol et
+                var isOwnMessage = response.SenderId == userId;
+                var isRead = false;
+                var readStatuses = new List<object>();
+                
+                if (isOwnMessage)
+                {
+                    // Kendi mesajı için okundu durumunu kontrol et
+                    // Kullanıcının mesajları için: support tarafından okunmuş mu?
+                    // Support'un mesajları için: kullanıcı tarafından okunmuş mu?
+                    var otherUserId = 0;
+                    if (response.Request != null)
+                    {
+                        if (userId == response.Request.RequestCreatorId)
+                        {
+                            // Kullanıcının mesajı - support tarafından okunmuş mu?
+                            otherUserId = response.Request.SupportProviderId ?? 0;
+                        }
+                        else if (userId == response.Request.SupportProviderId)
+                        {
+                            // Support'un mesajı - kullanıcı tarafından okunmuş mu?
+                            otherUserId = response.Request.RequestCreatorId;
+                        }
+                    }
+                    
+                    if (otherUserId != 0 && otherUserId != userId)
+                    {
+                        isRead = await _messageReadStatusService.IsMessageReadByUserAsync(response.Id, otherUserId);
+                    }
+                    Console.WriteLine($"DEBUG Controller: Message {response.Id} - isOwnMessage: {isOwnMessage}, isRead: {isRead}, otherUserId: {otherUserId}");
+                    var readStatusesData = await _messageReadStatusService.GetReadStatusesByMessageIdAsync(response.Id);
+                    readStatuses = readStatusesData.Select(rs => new
+                    {
+                        rs.UserId,
+                        rs.ReadAt,
+                        User = rs.User != null ? new
+                        {
+                            rs.User.FirstName,
+                            rs.User.LastName,
+                            rs.User.Email
+                        } : null
+                    }).Cast<object>().ToList();
+                }
                 
                 responseWithReadStatus.Add(new
                 {
@@ -65,18 +106,9 @@ namespace CMKITTalep.API.Controllers
                     response.IsDeleted,
                     response.Request,
                     response.Sender,
+                    IsOwnMessage = isOwnMessage,
                     IsReadByCurrentUser = isRead,
-                    ReadByUsers = readStatuses.Select(rs => new
-                    {
-                        rs.UserId,
-                        rs.ReadAt,
-                        User = rs.User != null ? new
-                        {
-                            rs.User.FirstName,
-                            rs.User.LastName,
-                            rs.User.Email
-                        } : null
-                    })
+                    ReadByUsers = readStatuses
                 });
             }
             
@@ -114,6 +146,18 @@ namespace CMKITTalep.API.Controllers
                 return Unauthorized(new { message = "User ID not found in token" });
             }
 
+            // Mesajın sahibini kontrol et - sadece kendi mesajları için okundu durumu işaretlenebilir
+            var message = await _requestResponseService.GetByIdAsync(messageId);
+            if (message == null)
+            {
+                return NotFound(new { message = "Message not found" });
+            }
+
+            if (message.SenderId != userId)
+            {
+                return BadRequest(new { message = "You can only mark your own messages as read" });
+            }
+
             await _messageReadStatusService.MarkMessageAsReadByUserAsync(messageId, userId);
             
             // SignalR ile mesajın okunduğunu bildir
@@ -137,7 +181,20 @@ namespace CMKITTalep.API.Controllers
                 return Unauthorized(new { message = "User ID not found in token" });
             }
 
+            Console.WriteLine($"DEBUG: Marking conversation {requestId} as read for user {userId}");
             await _messageReadStatusService.MarkConversationAsReadByUserAsync(requestId, userId);
+            Console.WriteLine($"DEBUG: Conversation {requestId} marked as read successfully for user {userId}");
+            
+            // SignalR ile konuşmanın okunduğunu bildir
+            Console.WriteLine($"DEBUG: Sending ConversationRead SignalR event for RequestId: {requestId}, UserId: {userId}");
+            await _hubContext.Clients.Group($"Request_{requestId}").SendAsync("ConversationRead", new
+            {
+                RequestId = requestId,
+                UserId = userId,
+                ReadAt = DateTime.UtcNow
+            });
+            Console.WriteLine($"DEBUG: ConversationRead SignalR event sent successfully");
+            
             return Ok(new { message = "Conversation marked as read" });
         }
 
@@ -170,6 +227,44 @@ namespace CMKITTalep.API.Controllers
             // SignalR ile yeni mesajı bildir
             if (result.Value != null)
             {
+                // Yeni mesaj için okundu durumunu kontrol et
+                var isRead = false;
+                var readStatuses = new List<object>();
+                
+                // Mesajın sahibi için okundu durumunu kontrol et
+                if (result.Value.Request != null)
+                {
+                    var otherUserId = 0;
+                    if (userId == result.Value.Request.RequestCreatorId)
+                    {
+                        // Kullanıcının mesajı - support tarafından okunmuş mu?
+                        otherUserId = result.Value.Request.SupportProviderId ?? 0;
+                    }
+                    else if (userId == result.Value.Request.SupportProviderId)
+                    {
+                        // Support'un mesajı - kullanıcı tarafından okunmuş mu?
+                        otherUserId = result.Value.Request.RequestCreatorId;
+                    }
+                    
+                    if (otherUserId != 0 && otherUserId != userId)
+                    {
+                        isRead = await _messageReadStatusService.IsMessageReadByUserAsync(result.Value.Id, otherUserId);
+                    }
+                    
+                    var readStatusesData = await _messageReadStatusService.GetReadStatusesByMessageIdAsync(result.Value.Id);
+                    readStatuses = readStatusesData.Select(rs => new
+                    {
+                        rs.UserId,
+                        rs.ReadAt,
+                        User = rs.User != null ? new
+                        {
+                            rs.User.FirstName,
+                            rs.User.LastName,
+                            rs.User.Email
+                        } : null
+                    }).Cast<object>().ToList();
+                }
+
                 await _hubContext.Clients.Group($"Request_{entity.RequestId}").SendAsync("ReceiveMessage", new
                 {
                     result.Value.Id,
@@ -181,8 +276,9 @@ namespace CMKITTalep.API.Controllers
                     result.Value.RequestId,
                     result.Value.SenderId,
                     result.Value.CreatedDate,
-                    IsReadByCurrentUser = false,
-                    ReadByUsers = new List<object>()
+                    IsOwnMessage = true, // Yeni gönderilen mesaj kendi mesajı
+                    IsReadByCurrentUser = isRead,
+                    ReadByUsers = readStatuses
                 });
             }
 

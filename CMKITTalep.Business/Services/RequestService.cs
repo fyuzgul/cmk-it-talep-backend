@@ -68,5 +68,10 @@ namespace CMKITTalep.Business.Services
         {
             await _requestRepository.MarkMessageAsReadAsync(messageId, userId);
         }
+
+        public async Task<RequestResponse?> GetRequestMessageByIdAsync(int messageId)
+        {
+            return await _requestRepository.GetRequestMessageByIdAsync(messageId);
+        }
     }
 }

@@ -13,7 +13,9 @@ namespace CMKITTalep.DataAccess.Repositories
 
         public async Task<bool> IsMessageReadByUserAsync(int messageId, int userId)
         {
-            return await _dbSet.AnyAsync(mrs => mrs.MessageId == messageId && mrs.UserId == userId && !mrs.IsDeleted);
+            var result = await _dbSet.AnyAsync(mrs => mrs.MessageId == messageId && mrs.UserId == userId && !mrs.IsDeleted);
+            Console.WriteLine($"DEBUG Repository: IsMessageReadByUserAsync - messageId: {messageId}, userId: {userId}, result: {result}");
+            return result;
         }
 
         public async Task MarkMessageAsReadByUserAsync(int messageId, int userId)
@@ -35,6 +37,9 @@ namespace CMKITTalep.DataAccess.Repositories
                 existingReadStatus.ReadAt = DateTime.UtcNow;
                 existingReadStatus.ModifiedDate = DateTime.UtcNow;
             }
+            
+            // Veritabanına kaydet
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<MessageReadStatus>> GetReadStatusesByMessageIdAsync(int messageId)
@@ -78,20 +83,57 @@ namespace CMKITTalep.DataAccess.Repositories
 
         public async Task MarkConversationAsReadByUserAsync(int requestId, int userId)
         {
-            // Bu request'e ait kullanıcının göndermediği tüm mesajları al
+            Console.WriteLine($"DEBUG Repository: MarkConversationAsReadByUserAsync called - requestId: {requestId}, userId: {userId}");
+            
+            // Bu request'e ait sadece kullanıcının göndermediği mesajları al (karşı tarafın mesajları)
             var messages = await _context.RequestResponses
                 .Where(rr => rr.RequestId == requestId && 
                             !rr.IsDeleted && 
-                            rr.SenderId.HasValue && 
-                            rr.SenderId != userId)
+                            rr.SenderId.HasValue &&
+                            rr.SenderId != userId) // Sadece karşı tarafın mesajları
                 .Select(rr => rr.Id)
                 .ToListAsync();
+            
+            Console.WriteLine($"DEBUG Repository: Found {messages.Count} messages to mark as read");
 
-            // Her mesaj için okuma durumu oluştur veya güncelle
+            // Mevcut okuma durumlarını al
+            var existingReadStatuses = await _dbSet
+                .Where(mrs => messages.Contains(mrs.MessageId) && mrs.UserId == userId && !mrs.IsDeleted)
+                .ToListAsync();
+
+            var existingMessageIds = existingReadStatuses.Select(mrs => mrs.MessageId).ToHashSet();
+            var newReadStatuses = new List<MessageReadStatus>();
+
+            // Yeni okuma durumları oluştur
             foreach (var messageId in messages)
             {
-                await MarkMessageAsReadByUserAsync(messageId, userId);
+                if (!existingMessageIds.Contains(messageId))
+                {
+                    newReadStatuses.Add(new MessageReadStatus
+                    {
+                        MessageId = messageId,
+                        UserId = userId,
+                        ReadAt = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    // Mevcut kaydı güncelle
+                    var existing = existingReadStatuses.First(mrs => mrs.MessageId == messageId);
+                    existing.ReadAt = DateTime.UtcNow;
+                    existing.ModifiedDate = DateTime.UtcNow;
+                }
             }
+
+            // Yeni kayıtları ekle
+            if (newReadStatuses.Any())
+            {
+                await _dbSet.AddRangeAsync(newReadStatuses);
+            }
+
+            // Veritabanına kaydet
+            await _context.SaveChangesAsync();
+            Console.WriteLine($"DEBUG Repository: Successfully saved {newReadStatuses.Count} new read statuses and updated {existingReadStatuses.Count} existing ones");
         }
     }
 }

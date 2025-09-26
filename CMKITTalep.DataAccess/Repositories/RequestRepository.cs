@@ -159,17 +159,36 @@ namespace CMKITTalep.DataAccess.Repositories
 
         public async Task MarkMessageAsReadAsync(int messageId, int userId)
         {
-            // Bu metod MessageReadStatus tablosunu kullanabilir
-            // Şimdilik basit bir implementasyon
-            var message = await _context.RequestResponses
-                .FirstOrDefaultAsync(rr => rr.Id == messageId && !rr.IsDeleted);
+            // MessageReadStatus tablosunu kullanarak okundu durumunu işaretle
+            var existingReadStatus = await _context.MessageReadStatuses
+                .FirstOrDefaultAsync(mrs => mrs.MessageId == messageId && mrs.UserId == userId && !mrs.IsDeleted);
             
-            if (message != null)
+            if (existingReadStatus == null)
             {
-                // Mesaj okundu olarak işaretleme işlemi burada yapılabilir
-                // Şimdilik sadece log yazıyoruz
-                Console.WriteLine($"Message {messageId} marked as read by user {userId}");
+                var readStatus = new MessageReadStatus
+                {
+                    MessageId = messageId,
+                    UserId = userId,
+                    ReadAt = DateTime.UtcNow
+                };
+                await _context.MessageReadStatuses.AddAsync(readStatus);
             }
+            else
+            {
+                existingReadStatus.ReadAt = DateTime.UtcNow;
+                existingReadStatus.ModifiedDate = DateTime.UtcNow;
+            }
+            
+            // Veritabanına kaydet
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<RequestResponse?> GetRequestMessageByIdAsync(int messageId)
+        {
+            return await _context.RequestResponses
+                .Where(rr => rr.Id == messageId && !rr.IsDeleted)
+                .Include(rr => rr.Sender)
+                .FirstOrDefaultAsync();
         }
     }
 }

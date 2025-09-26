@@ -17,5 +17,6 @@ namespace CMKITTalep.DataAccess.Interfaces
         Task<IEnumerable<RequestResponse>> GetRequestMessagesAsync(int requestId);
         Task<RequestResponse> AddRequestMessageAsync(int requestId, int userId, string message, string? filePath = null);
         Task MarkMessageAsReadAsync(int messageId, int userId);
+        Task<RequestResponse?> GetRequestMessageByIdAsync(int messageId);
     }
 }
