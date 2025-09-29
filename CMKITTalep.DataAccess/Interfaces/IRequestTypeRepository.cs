@@ -6,6 +6,7 @@ namespace CMKITTalep.DataAccess.Interfaces
     {
         Task<RequestType?> GetByNameAsync(string name);
         Task<bool> ExistsByNameAsync(string name);
+        Task<bool> ExistsByNameAndSupportTypeAsync(string name, int supportTypeId);
         Task<IEnumerable<RequestType>> GetBySupportTypeIdAsync(int supportTypeId);
     }
 }

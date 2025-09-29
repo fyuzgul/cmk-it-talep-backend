@@ -12,5 +12,9 @@ namespace CMKITTalep.DataAccess.Interfaces
         
         // Mesajlaşma için ek metodlar
         Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<int> userIds);
+        
+        // Silinen kullanıcılar için metodlar
+        Task<IEnumerable<User>> GetDeletedUsersAsync();
+        Task RestoreUserAsync(int id);
     }
 }

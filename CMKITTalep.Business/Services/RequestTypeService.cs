@@ -23,6 +23,11 @@ namespace CMKITTalep.Business.Services
             return await _requestTypeRepository.ExistsByNameAsync(name);
         }
 
+        public async Task<bool> ExistsByNameAndSupportTypeAsync(string name, int supportTypeId)
+        {
+            return await _requestTypeRepository.ExistsByNameAndSupportTypeAsync(name, supportTypeId);
+        }
+
         public async Task<IEnumerable<RequestType>> GetBySupportTypeIdAsync(int supportTypeId)
         {
             return await _requestTypeRepository.GetBySupportTypeIdAsync(supportTypeId);

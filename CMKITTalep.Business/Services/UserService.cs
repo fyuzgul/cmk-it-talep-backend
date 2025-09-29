@@ -91,5 +91,16 @@ namespace CMKITTalep.Business.Services
         {
             return await _userRepository.GetUsersByIdsAsync(userIds);
         }
+
+        // Silinen kullanıcılar için metodlar
+        public async Task<IEnumerable<User>> GetDeletedUsersAsync()
+        {
+            return await _userRepository.GetDeletedUsersAsync();
+        }
+
+        public async Task RestoreUserAsync(int id)
+        {
+            await _userRepository.RestoreUserAsync(id);
+        }
     }
 }

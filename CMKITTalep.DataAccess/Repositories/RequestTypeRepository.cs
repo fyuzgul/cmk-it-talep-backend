@@ -22,6 +22,11 @@ namespace CMKITTalep.DataAccess.Repositories
             return await _dbSet.AnyAsync(r => r.Name == name);
         }
 
+        public async Task<bool> ExistsByNameAndSupportTypeAsync(string name, int supportTypeId)
+        {
+            return await _dbSet.AnyAsync(r => r.Name == name && r.SupportTypeId == supportTypeId);
+        }
+
         public async Task<IEnumerable<RequestType>> GetBySupportTypeIdAsync(int supportTypeId)
         {
             return await _dbSet.Include(r => r.SupportType)

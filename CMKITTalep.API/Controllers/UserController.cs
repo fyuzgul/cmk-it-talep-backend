@@ -98,6 +98,30 @@ namespace CMKITTalep.API.Controllers
             return await base.Delete(id);
         }
 
+        // Silinen kullanıcılar için endpoint'ler
+        [HttpGet("deleted")]
+        [RequireAdmin]
+        public async Task<ActionResult<IEnumerable<User>>> GetDeletedUsers()
+        {
+            var deletedUsers = await _userService.GetDeletedUsersAsync();
+            return Ok(deletedUsers);
+        }
+
+        [HttpPost("restore/{id}")]
+        [RequireAdmin]
+        public async Task<IActionResult> RestoreUser(int id)
+        {
+            try
+            {
+                await _userService.RestoreUserAsync(id);
+                return Ok(new { message = "Kullanıcı başarıyla geri getirildi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Kullanıcı geri getirilirken bir hata oluştu: " + ex.Message });
+            }
+        }
+
         // Mesajlaşma için ek metodlar
         [HttpPost("GetByIds")]
         [RequireAuthenticated]

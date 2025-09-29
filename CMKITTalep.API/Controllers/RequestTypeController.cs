@@ -36,10 +36,10 @@ namespace CMKITTalep.API.Controllers
         [RequireAdmin]
         public override async Task<ActionResult<RequestType>> Create(RequestType entity)
         {
-            // Check if requestType with same name already exists
-            if (await _requestTypeService.ExistsByNameAsync(entity.Name))
+            // Check if requestType with same name already exists in the same support type
+            if (await _requestTypeService.ExistsByNameAndSupportTypeAsync(entity.Name, entity.SupportTypeId))
             {
-                ModelState.AddModelError("Name", "A request type with this name already exists.");
+                ModelState.AddModelError("Name", "A request type with this name already exists in this support type.");
                 return BadRequest(ModelState);
             }
 
@@ -50,6 +50,16 @@ namespace CMKITTalep.API.Controllers
         [RequireAdmin]
         public override async Task<IActionResult> Update(int id, RequestType entity)
         {
+            // Check if requestType with same name already exists in the same support type (excluding current record)
+            var existingRequestType = await _requestTypeService.GetByIdAsync(id);
+            if (existingRequestType != null && 
+                existingRequestType.Name != entity.Name && 
+                await _requestTypeService.ExistsByNameAndSupportTypeAsync(entity.Name, entity.SupportTypeId))
+            {
+                ModelState.AddModelError("Name", "A request type with this name already exists in this support type.");
+                return BadRequest(ModelState);
+            }
+
             return await base.Update(id, entity);
         }
 
