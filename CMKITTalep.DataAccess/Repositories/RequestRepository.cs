@@ -17,22 +17,13 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Where(r => r.SupportProviderId == supportProviderId)
+                               .Where(r => r.SupportProviderId == supportProviderId && !r.IsDeleted)
+                               .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
         }
 
         public async Task<IEnumerable<Request>> GetByRequestCreatorIdAsync(int requestCreatorId)
         {
-            Console.WriteLine($"DEBUG Repository: Searching for RequestCreatorId = {requestCreatorId}");
-            
-            // Önce tüm talepleri sayalım
-            var totalRequests = await _dbSet.CountAsync();
-            Console.WriteLine($"DEBUG Repository: Total requests in database = {totalRequests}");
-            
-            // Tüm RequestCreatorId'leri listele
-            var allCreatorIds = await _dbSet.Select(r => r.RequestCreatorId).Distinct().ToListAsync();
-            Console.WriteLine($"DEBUG Repository: All RequestCreatorIds in database = [{string.Join(", ", allCreatorIds)}]");
-            
             // Include'ları kullanarak veri çekelim - SupportProviderId NULL olabilir, bu durumda da kayıt gelsin
             var requests = await _dbSet
                 .Where(r => r.RequestCreatorId == requestCreatorId && !r.IsDeleted)
@@ -40,9 +31,9 @@ namespace CMKITTalep.DataAccess.Repositories
                 .Include(r => r.RequestCreator)
                 .Include(r => r.RequestStatus)
                 .Include(r => r.RequestType)
+                .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
                                
-            Console.WriteLine($"DEBUG Repository: Found {requests.Count()} requests for RequestCreatorId = {requestCreatorId}");
             return requests;
         }
 
@@ -52,7 +43,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Where(r => r.RequestStatusId == requestStatusId)
+                               .Where(r => r.RequestStatusId == requestStatusId && !r.IsDeleted)
+                               .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
         }
 
@@ -62,7 +54,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Where(r => r.RequestTypeId == requestTypeId)
+                               .Where(r => r.RequestTypeId == requestTypeId && !r.IsDeleted)
+                               .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
         }
 
@@ -81,7 +74,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Where(r => r.Description.Contains(description))
+                               .Where(r => r.Description.Contains(description) && !r.IsDeleted)
+                               .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
         }
 
@@ -189,6 +183,26 @@ namespace CMKITTalep.DataAccess.Repositories
                 .Where(rr => rr.Id == messageId && !rr.IsDeleted)
                 .Include(rr => rr.Sender)
                 .FirstOrDefaultAsync();
+        }
+
+        // Pagination desteği için yeni metod
+        public async Task<(IEnumerable<Request> requests, int totalCount)> GetBySupportProviderIdWithPaginationAsync(int supportProviderId, int page = 1, int pageSize = 20)
+        {
+            var query = _dbSet
+                .Where(r => r.SupportProviderId == supportProviderId && !r.IsDeleted)
+                .Include(r => r.SupportProvider)
+                .Include(r => r.RequestCreator)
+                .Include(r => r.RequestStatus)
+                .Include(r => r.RequestType)
+                .OrderByDescending(r => r.CreatedDate);
+
+            var totalCount = await query.CountAsync();
+            var requests = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (requests, totalCount);
         }
     }
 }

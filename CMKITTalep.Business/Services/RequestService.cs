@@ -43,6 +43,12 @@ namespace CMKITTalep.Business.Services
             return await _requestRepository.GetByDescriptionContainingAsync(description);
         }
 
+        // Pagination desteği
+        public async Task<(IEnumerable<Request> requests, int totalCount)> GetBySupportProviderIdWithPaginationAsync(int supportProviderId, int page = 1, int pageSize = 20)
+        {
+            return await _requestRepository.GetBySupportProviderIdWithPaginationAsync(supportProviderId, page, pageSize);
+        }
+
         // Mesajlaşma metodları
         public async Task<IEnumerable<Request>> GetUserChatRequestsAsync(int userId)
         {

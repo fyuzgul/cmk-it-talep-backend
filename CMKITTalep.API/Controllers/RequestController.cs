@@ -35,9 +35,7 @@ namespace CMKITTalep.API.Controllers
         [HttpGet("creator/{requestCreatorId}")]
         public async Task<ActionResult<IEnumerable<Request>>> GetByRequestCreator(int requestCreatorId)
         {
-            Console.WriteLine($"DEBUG: Searching for RequestCreatorId = {requestCreatorId}");
             var requests = await _requestService.GetByRequestCreatorIdAsync(requestCreatorId);
-            Console.WriteLine($"DEBUG: Found {requests.Count()} requests");
             return Ok(requests);
         }
 
@@ -71,6 +69,23 @@ namespace CMKITTalep.API.Controllers
         {
             var requests = await _requestService.GetByDescriptionContainingAsync(description);
             return Ok(requests);
+        }
+
+        [HttpGet("paginated")]
+        public async Task<ActionResult<object>> GetPaginated([FromQuery] int? supportProviderId, [FromQuery] int? requestCreatorId, [FromQuery] int? requestStatusId, [FromQuery] int? requestTypeId, [FromQuery] string? description, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            if (supportProviderId.HasValue)
+            {
+                var result = await _requestService.GetBySupportProviderIdWithPaginationAsync(supportProviderId.Value, page, pageSize);
+                return Ok(new { requests = result.requests, totalCount = result.totalCount, page, pageSize });
+            }
+            
+            // Diğer filtreler için genel pagination (gelecekte implement edilebilir)
+            var allRequests = await _requestService.GetAllAsync();
+            var totalCount = allRequests.Count();
+            var pagedRequests = allRequests.Skip((page - 1) * pageSize).Take(pageSize);
+            
+            return Ok(new { requests = pagedRequests, totalCount, page, pageSize });
         }
 
         [HttpPost("create")]

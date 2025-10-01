@@ -18,5 +18,8 @@ namespace CMKITTalep.Business.Interfaces
         Task<RequestResponse> AddRequestMessageAsync(int requestId, int userId, string message, string? filePath = null);
         Task MarkMessageAsReadAsync(int messageId, int userId);
         Task<RequestResponse?> GetRequestMessageByIdAsync(int messageId);
+        
+        // Pagination desteği
+        Task<(IEnumerable<Request> requests, int totalCount)> GetBySupportProviderIdWithPaginationAsync(int supportProviderId, int page = 1, int pageSize = 20);
     }
 }
