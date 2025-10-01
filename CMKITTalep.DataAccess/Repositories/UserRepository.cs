@@ -80,7 +80,8 @@ namespace CMKITTalep.DataAccess.Repositories
         // Silinen kullanıcılar için metodlar
         public async Task<IEnumerable<User>> GetDeletedUsersAsync()
         {
-            return await _dbSet.Include(u => u.Department)
+            return await _context.Users.IgnoreQueryFilters()
+                               .Include(u => u.Department)
                                .Include(u => u.UserType)
                                .Where(u => u.IsDeleted == true)
                                .ToListAsync();
@@ -88,7 +89,7 @@ namespace CMKITTalep.DataAccess.Repositories
 
         public async Task RestoreUserAsync(int id)
         {
-            var user = await _dbSet.FindAsync(id);
+            var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == id);
             if (user != null)
             {
                 user.IsDeleted = false;

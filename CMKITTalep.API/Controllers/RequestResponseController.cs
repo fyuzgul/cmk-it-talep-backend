@@ -24,6 +24,18 @@ namespace CMKITTalep.API.Controllers
             _hubContext = hubContext;
         }
 
+        // ⚠️ DISABLED: GetAll endpoint - tüm mesajları yüklemek performans sorunu yaratır
+        // Bunun yerine GetByRequestId endpoint'ini kullanın
+        [HttpGet]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public override async Task<ActionResult<IEnumerable<RequestResponse>>> GetAll()
+        {
+            return BadRequest(new { 
+                message = "Bu endpoint devre dışı bırakıldı. Lütfen /api/RequestResponse/request/{requestId} endpoint'ini kullanın.",
+                reason = "Performance optimization - loading all messages causes 20+ second delays"
+            });
+        }
+
         [HttpGet("request/{requestId}")]
         public async Task<ActionResult<IEnumerable<RequestResponse>>> GetByRequestId(int requestId)
         {
@@ -187,7 +199,7 @@ namespace CMKITTalep.API.Controllers
             
             // SignalR ile konuşmanın okunduğunu bildir
             Console.WriteLine($"DEBUG: Sending ConversationRead SignalR event for RequestId: {requestId}, UserId: {userId}");
-            await _hubContext.Clients.Group($"Request_{requestId}").SendAsync("ConversationRead", new
+            await _hubContext.Clients.Group($"request_{requestId}").SendAsync("ConversationRead", new
             {
                 RequestId = requestId,
                 UserId = userId,
@@ -265,7 +277,7 @@ namespace CMKITTalep.API.Controllers
                     }).Cast<object>().ToList();
                 }
 
-                await _hubContext.Clients.Group($"Request_{entity.RequestId}").SendAsync("ReceiveMessage", new
+                await _hubContext.Clients.Group($"request_{entity.RequestId}").SendAsync("ReceiveMessage", new
                 {
                     result.Value.Id,
                     result.Value.Message,
