@@ -13,11 +13,12 @@ namespace CMKITTalep.DataAccess.Repositories
 
         public async Task<IEnumerable<Request>> GetBySupportProviderIdAsync(int supportProviderId)
         {
+            // Support ekibi için tüm talepleri göster (atanmış/atanmamış fark etmez)
             return await _dbSet.Include(r => r.SupportProvider)
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
-                               .Where(r => (r.SupportProviderId == supportProviderId || r.SupportProviderId == null) && !r.IsDeleted)
+                               .Where(r => !r.IsDeleted)
                                .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
         }
@@ -188,8 +189,9 @@ namespace CMKITTalep.DataAccess.Repositories
         // Pagination desteği için yeni metod
         public async Task<(IEnumerable<Request> requests, int totalCount)> GetBySupportProviderIdWithPaginationAsync(int supportProviderId, int page = 1, int pageSize = 20)
         {
+            // Support ekibi için tüm talepleri göster (atanmış/atanmamış fark etmez)
             var query = _dbSet
-                .Where(r => (r.SupportProviderId == supportProviderId || r.SupportProviderId == null) && !r.IsDeleted)
+                .Where(r => !r.IsDeleted)
                 .Include(r => r.SupportProvider)
                 .Include(r => r.RequestCreator)
                 .Include(r => r.RequestStatus)
