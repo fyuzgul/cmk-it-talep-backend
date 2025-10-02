@@ -18,6 +18,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .Where(r => !r.IsDeleted)
                                .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
@@ -32,6 +34,8 @@ namespace CMKITTalep.DataAccess.Repositories
                 .Include(r => r.RequestCreator)
                 .Include(r => r.RequestStatus)
                 .Include(r => r.RequestType)
+                    .ThenInclude(rt => rt.SupportType)
+                .Include(r => r.PriorityLevel)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
                                
@@ -44,6 +48,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .Where(r => r.RequestStatusId == requestStatusId && !r.IsDeleted)
                                .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
@@ -55,6 +61,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .Where(r => r.RequestTypeId == requestTypeId && !r.IsDeleted)
                                .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
@@ -75,6 +83,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .Where(r => r.Description.Contains(description) && !r.IsDeleted)
                                .OrderByDescending(r => r.CreatedDate)
                                .ToListAsync();
@@ -88,6 +98,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .ToListAsync();
         }
 
@@ -99,6 +111,8 @@ namespace CMKITTalep.DataAccess.Repositories
                                .Include(r => r.RequestCreator)
                                .Include(r => r.RequestStatus)
                                .Include(r => r.RequestType)
+                                   .ThenInclude(rt => rt.SupportType)
+                               .Include(r => r.PriorityLevel)
                                .FirstOrDefaultAsync();
         }
 
@@ -196,6 +210,8 @@ namespace CMKITTalep.DataAccess.Repositories
                 .Include(r => r.RequestCreator)
                 .Include(r => r.RequestStatus)
                 .Include(r => r.RequestType)
+                    .ThenInclude(rt => rt.SupportType)
+                .Include(r => r.PriorityLevel)
                 .OrderByDescending(r => r.CreatedDate);
 
             var totalCount = await query.CountAsync();
